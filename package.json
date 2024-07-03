@@ -1,0 +1,37 @@
+{
+  "name": "trabalho-1-cg",
+  "version": "1.0.0",
+  "description": "Assignment 1 of the Computer Graphics subject: a procedural scene",
+  "main": "entry-error.js",
+  "scripts": {
+    "test": "echo No tests were implemented yet, sorry.",
+    
+    "start": "run-script-os",
+    "start:windows": "start index.html",
+    "start:linux": "xdg-open index.html",
+    "start:mac": "open index.html"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/CommandPromptGamer/trabalho-1-cg.git"
+  },
+  "keywords": [
+    "CG",
+    "Computer Graphics",
+    "procedural",
+    "WebGL2",
+    "javascript"
+  ],
+  "author": "Lucas Superti",
+  "license": "UNLICENSED",
+  "bugs": {
+    "url": "https://github.com/CommandPromptGamer/trabalho-1-cg/issues"
+  },
+  "homepage": "https://github.com/CommandPromptGamer/trabalho-1-cg#readme",
+  "dependencies": {
+    "twgl.js": "^5.5.4"
+  },
+  "devDependencies": {
+    "run-script-os": "^1.1.6"
+  }
+}

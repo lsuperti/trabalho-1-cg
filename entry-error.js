@@ -1,0 +1,1 @@
+console.error("This application cannot not be run this way. Please run 'npm start' or open index.html in a browser instead.");
