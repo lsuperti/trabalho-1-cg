@@ -381,7 +381,7 @@ async function main() {
   // compiles and links the shaders, looks up attribute and uniform locations
   const meshProgramInfo = twgl.createProgramInfo(gl, [vs, fs]);
 
-  const objHref = 'https://webgl2fundamentals.org/webgl/resources/models/windmill/windmill.obj';  
+  const objHref = './assets/windmill/windmill.obj';
   const response = await fetch(objHref);
   const text = await response.text();
   const obj = parseOBJ(text);

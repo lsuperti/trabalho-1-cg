@@ -5,11 +5,8 @@
   "main": "entry-error.js",
   "scripts": {
     "test": "echo No tests were implemented yet, sorry.",
-    
-    "start": "run-script-os",
-    "start:windows": "start index.html",
-    "start:linux": "xdg-open index.html",
-    "start:mac": "open index.html"
+    "start": "npx http-server -c-1 -o",
+    "serve": "npx http-server"
   },
   "repository": {
     "type": "git",
@@ -17,7 +14,7 @@
   },
   "keywords": [
     "CG",
-    "Computer Graphics",
+    "computer graphics",
     "procedural",
     "WebGL2",
     "javascript"
@@ -29,9 +26,7 @@
   },
   "homepage": "https://github.com/CommandPromptGamer/trabalho-1-cg#readme",
   "dependencies": {
+    "http-server": "^14.1.1",
     "twgl.js": "^5.5.4"
-  },
-  "devDependencies": {
-    "run-script-os": "^1.1.6"
   }
 }
