@@ -385,8 +385,8 @@ async function main() {
     return deg * Math.PI / 180;
   }
 
-  const object1 = await parseAndLoadOBJ("./assets/windmill/windmill.obj");
-  const object2 = await parseAndLoadOBJ("./assets/chair/chair.obj");
+  const windmill = await parseAndLoadOBJ("./assets/windmill/windmill.obj");
+  const chair = await parseAndLoadOBJ("./assets/chair/chair.obj");
 
   function render(time) {
     time *= 0.001;  // convert to seconds
@@ -397,11 +397,11 @@ async function main() {
 
     const fieldOfViewRadians = degToRad(60);
     const aspect = gl.canvas.clientWidth / gl.canvas.clientHeight;
-    const projection = m4.perspective(fieldOfViewRadians, aspect, object1.zNear, object1.zFar);
+    const projection = m4.perspective(fieldOfViewRadians, aspect, windmill.zNear, windmill.zFar);
 
     const up = [0, 1, 0];
     // Compute the camera's matrix using look at.
-    const camera = m4.lookAt(object1.cameraPosition, object1.cameraTarget, up);
+    const camera = m4.lookAt(windmill.cameraPosition, windmill.cameraTarget, up);
 
     // Make a view matrix from the camera matrix.
     const view = m4.inverse(camera);
@@ -410,7 +410,7 @@ async function main() {
       u_lightDirection: m4.normalize([-1, 3, 5]),
       u_view: view,
       u_projection: projection,
-      u_viewWorldPosition: object1.cameraPosition,
+      u_viewWorldPosition: windmill.cameraPosition,
     };
 
     gl.useProgram(meshProgramInfo.program);
@@ -418,23 +418,28 @@ async function main() {
     // calls gl.uniform
     twgl.setUniforms(meshProgramInfo, sharedUniforms);
 
-    // compute the world matrix once since all parts
-    // are at the same space.
-    let u_world = m4.yRotation(time);
-    u_world = m4.translate(u_world, ...object1.objOffset);
+    const scale1 = Math.sin(time) / 2 + 1;
+    const scale2 = Math.sin(time + Math.PI / 2) / 2 + 1;
 
-    renderObjectFromParts(u_world, object1.parts);
-    renderObjectFromParts(u_world, object2.parts);
+    renderObject(windmill.parts, [time + Math.PI, time + Math.PI, time + Math.PI], [-5 + Math.sin(time) * 3.5, -3 + Math.sin(time) * 3.5, 0 + Math.sin(time) * 3.5], [scale1, scale1, scale1]);
+    renderObject(chair.parts, [time, time, time], [5 + Math.sin(time + Math.PI) * 3.5, -3 + Math.sin(time + Math.PI) * 3.5, 0 + Math.sin(time + Math.PI) * 3.5], [scale2, scale2, scale2]);
 
     requestAnimationFrame(render);
   }
   requestAnimationFrame(render);
 
-  // TODO: receive scale, rotation, and translation and apply them to the rendered object
-  function renderObjectFromParts(u_world, parts) {
+  function renderObject(parts, [xRotation, yRotation, zRotation] = [0, 0, 0], [xTranslation, yTranslation, zTranslation] = [0, 0, 0], [xScale, yScale, zScale] = [1, 1, 1]) {
+
+    var u_world = m4.translate(m4.identity(), xTranslation, yTranslation, zTranslation);
+    u_world = m4.xRotate(u_world, xRotation);
+    u_world = m4.yRotate(u_world, yRotation);
+    u_world = m4.zRotate(u_world, zRotation);
+    u_world = m4.scale(u_world, xScale, yScale, zScale);
+    
     for (const { bufferInfo, vao, material } of parts) {
       // set the attributes for this part.
       gl.bindVertexArray(vao);
+      
       // calls gl.uniform
       twgl.setUniforms(meshProgramInfo, {
         u_world,
