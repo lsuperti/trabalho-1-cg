@@ -6,7 +6,8 @@
   "scripts": {
     "test": "echo No tests were implemented yet, sorry.",
     "start": "npx http-server -c-1 -o",
-    "serve": "npx http-server"
+    "serve": "npx http-server",
+    "live": "npx live-server"
   },
   "repository": {
     "type": "git",
