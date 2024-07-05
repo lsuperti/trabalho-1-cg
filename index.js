@@ -41,8 +41,8 @@ function generateTangents(position, texcoord, indices) {
     const uv2 = texcoord.slice(n2 * 2, n2 * 2 + 2);
     const uv3 = texcoord.slice(n3 * 2, n3 * 2 + 2);
 
-    const dp12 = m4.subtractVectors(p2, p1);
-    const dp13 = m4.subtractVectors(p3, p1);
+    const dp12 = twgl.m4.subtract(p2, p1);
+    const dp13 = twgl.m4.subtract(p3, p1);
 
     const duv12 = subtractVector2(uv2, uv1);
     const duv13 = subtractVector2(uv3, uv1);
@@ -50,9 +50,9 @@ function generateTangents(position, texcoord, indices) {
 
     const f = 1.0 / (duv12[0] * duv13[1] - duv13[0] * duv12[1]);
     const tangent = Number.isFinite(f)
-      ? m4.normalize(m4.scaleVector(m4.subtractVectors(
-          m4.scaleVector(dp12, duv13[1]),
-          m4.scaleVector(dp13, duv12[1]),
+      ? twgl.v3.normalize(twgl.v3.mulScalar(twgl.v3.subtract(
+          twgl.v3.mulScalar(dp12, duv13[1]),
+          twgl.v3.mulScalar(dp13, duv12[1]),
         ), f))
       : [1, 0, 0];
 
@@ -180,17 +180,17 @@ async function main() {
 
     const fieldOfViewRadians = degToRad(60);
     const aspect = gl.canvas.clientWidth / gl.canvas.clientHeight;
-    const projection = m4.perspective(fieldOfViewRadians, aspect, windmill.zNear, windmill.zFar);
+    const projection = twgl.m4.perspective(fieldOfViewRadians, aspect, windmill.zNear, windmill.zFar);
 
     const up = [0, 1, 0];
     // Compute the camera's matrix using look at.
-    const camera = m4.lookAt(windmill.cameraPosition, windmill.cameraTarget, up);
+    const camera = twgl.m4.lookAt(windmill.cameraPosition, windmill.cameraTarget, up);
 
     // Make a view matrix from the camera matrix.
-    const view = m4.inverse(camera);
+    const view = twgl.m4.inverse(camera);
 
     const sharedUniforms = {
-      u_lightDirection: m4.normalize([-1, 3, 5]),
+      u_lightDirection: twgl.v3.normalize([-1, 3, 5]),
       u_view: view,
       u_projection: projection,
       u_viewWorldPosition: windmill.cameraPosition,

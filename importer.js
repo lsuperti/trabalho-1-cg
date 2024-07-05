@@ -4,6 +4,7 @@
 // This is not a full .obj parser.
 // see http://paulbourke.net/dataformats/obj/
 
+
 export function parseOBJ(text) {
   // because indices are base 1 let's just fill in the 0th data
   const objPositions = [[0, 0, 0]];
@@ -257,8 +258,8 @@ function generateTangents(position, texcoord, indices) {
     const uv2 = texcoord.slice(n2 * 2, n2 * 2 + 2);
     const uv3 = texcoord.slice(n3 * 2, n3 * 2 + 2);
 
-    const dp12 = m4.subtractVectors(p2, p1);
-    const dp13 = m4.subtractVectors(p3, p1);
+    const dp12 = twgl.v3.subtract(p2, p1);
+    const dp13 = twgl.v3.subtract(p3, p1);
 
     const duv12 = subtractVector2(uv2, uv1);
     const duv13 = subtractVector2(uv3, uv1);
@@ -266,9 +267,9 @@ function generateTangents(position, texcoord, indices) {
 
     const f = 1.0 / (duv12[0] * duv13[1] - duv13[0] * duv12[1]);
     const tangent = Number.isFinite(f)
-      ? m4.normalize(m4.scaleVector(m4.subtractVectors(
-          m4.scaleVector(dp12, duv13[1]),
-          m4.scaleVector(dp13, duv12[1]),
+      ? twgl.v3.normalize(twgl.v3.mulScalar(twgl.v3.subtract(
+          twgl.v3.mulScalar(dp12, duv13[1]),
+          twgl.v3.mulScalar(dp13, duv12[1]),
         ), f))
       : [1, 0, 0];
 
@@ -402,18 +403,18 @@ export async function parseAndLoadOBJ(objHref, gl, meshProgramInfo) {
   }
 
   const extents = getGeometriesExtents(obj.geometries);
-  const range = m4.subtractVectors(extents.max, extents.min);
+  const range = twgl.v3.subtract(extents.max, extents.min);
   // amount to move the object so its center is at the origin
-  const objOffset = m4.scaleVector(
-    m4.addVectors(
+  const objOffset = twgl.v3.mulScalar(
+    twgl.v3.add(
       extents.min,
-      m4.scaleVector(range, 0.5)),
+      twgl.v3.mulScalar(range, 0.5)),
     -1);
   const cameraTarget = [0, 0, 0];
   // figure out how far away to move the camera so we can likely
   // see the object.
-  const radius = m4.length(range);
-  const cameraPosition = m4.addVectors(cameraTarget, [
+  const radius = twgl.v3.length(range);
+  const cameraPosition = twgl.v3.add(cameraTarget, [
     0,
     0,
     radius,
@@ -426,12 +427,11 @@ export async function parseAndLoadOBJ(objHref, gl, meshProgramInfo) {
 }
 
 export function renderObject(gl, meshProgramInfo, parts, [xRotation, yRotation, zRotation] = [0, 0, 0], [xTranslation, yTranslation, zTranslation] = [0, 0, 0], [xScale, yScale, zScale] = [1, 1, 1]) {
-
-  var u_world = m4.translate(m4.identity(), xTranslation, yTranslation, zTranslation);
-  u_world = m4.xRotate(u_world, xRotation);
-  u_world = m4.yRotate(u_world, yRotation);
-  u_world = m4.zRotate(u_world, zRotation);
-  u_world = m4.scale(u_world, xScale, yScale, zScale);
+  var u_world = twgl.m4.translation(twgl.v3.create(xTranslation, yTranslation, zTranslation));
+  u_world = twgl.m4.rotateX(u_world, xRotation);
+  u_world = twgl.m4.rotateY(u_world, yRotation);
+  u_world = twgl.m4.rotateZ(u_world, zRotation);
+  u_world = twgl.m4.scale(u_world, twgl.v3.create(xScale, yScale, zScale));
   
   for (const { bufferInfo, vao, material } of parts) {
     // set the attributes for this part.
