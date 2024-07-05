@@ -387,6 +387,7 @@ async function main() {
 
   const windmill = await parseAndLoadOBJ("./assets/windmill/windmill.obj");
   const chair = await parseAndLoadOBJ("./assets/chair/chair.obj");
+  const desk = await parseAndLoadOBJ("./assets/desk/desk.obj");
 
   function render(time) {
     time *= 0.001;  // convert to seconds
@@ -420,9 +421,11 @@ async function main() {
 
     const scale1 = Math.sin(time) / 2 + 1;
     const scale2 = Math.sin(time + Math.PI / 2) / 2 + 1;
+    const scale3 = Math.sin(time + Math.PI) / 2 + 1;
 
     renderObject(windmill.parts, [time + Math.PI, time + Math.PI, time + Math.PI], [-5 + Math.sin(time) * 3.5, -3 + Math.sin(time) * 3.5, 0 + Math.sin(time) * 3.5], [scale1, scale1, scale1]);
     renderObject(chair.parts, [time, time, time], [5 + Math.sin(time + Math.PI) * 3.5, -3 + Math.sin(time + Math.PI) * 3.5, 0 + Math.sin(time + Math.PI) * 3.5], [scale2, scale2, scale2]);
+    renderObject(desk.parts, [time + Math.PI / 2, time + Math.PI / 2, time + Math.PI / 2], [Math.sin(time + Math.PI / 2) * 3.5, -3 + Math.sin(time + Math.PI / 2) * 3.5, Math.sin(time + Math.PI / 2) * 3.5], [scale3 * 5, scale3 * 5, scale3 * 5]);
 
     requestAnimationFrame(render);
   }
@@ -480,12 +483,6 @@ async function main() {
           material[key] = texture;
         });
     }
-
-    // hack the materials so we can see the specular map
-    Object.values(materials).forEach(m => {
-      m.shininess = 25;
-      m.specular = [3, 2, 1];
-    });
 
     const defaultMaterial = {
       diffuse: [1, 1, 1],

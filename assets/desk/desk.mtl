@@ -1,0 +1,13 @@
+# Blender 4.0.2 MTL File: 'desk.blend'
+# www.blender.org
+
+newmtl Desk
+Ka 1.000000 1.000000 1.000000
+Ks 0.400000 0.400000 0.400000
+Ke 0.000000 0.000000 0.000000
+Ni 1.450000
+d 1.000000
+illum 2
+map_Kd desk_Var_01_BaseColor.jpg
+map_Ns desk_Roughness.jpg
+map_Bump desk_Normal.jpg
