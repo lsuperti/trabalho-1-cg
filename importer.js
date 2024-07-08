@@ -426,14 +426,14 @@ export async function parseAndLoadOBJ(objHref, gl, meshProgramInfo) {
   return { zNear, zFar, cameraPosition, cameraTarget, objOffset, parts };
 }
 
-export function renderObject(gl, meshProgramInfo, parts, [xRotation, yRotation, zRotation] = [0, 0, 0], [xTranslation, yTranslation, zTranslation] = [0, 0, 0], [xScale, yScale, zScale] = [1, 1, 1]) {
+export function renderObject(gl, meshProgramInfo, object, [xRotation, yRotation, zRotation] = [0, 0, 0], [xTranslation, yTranslation, zTranslation] = [0, 0, 0], [xScale, yScale, zScale] = [1, 1, 1]) {
   var u_world = twgl.m4.translation(twgl.v3.create(xTranslation, yTranslation, zTranslation));
   u_world = twgl.m4.rotateX(u_world, xRotation);
   u_world = twgl.m4.rotateY(u_world, yRotation);
   u_world = twgl.m4.rotateZ(u_world, zRotation);
   u_world = twgl.m4.scale(u_world, twgl.v3.create(xScale, yScale, zScale));
   
-  for (const { bufferInfo, vao, material } of parts) {
+  for (const { bufferInfo, vao, material } of object.parts) {
     // set the attributes for this part.
     gl.bindVertexArray(vao);
     

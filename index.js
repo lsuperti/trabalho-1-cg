@@ -170,6 +170,10 @@ async function main() {
   const windmill = await parseAndLoadOBJ("./assets/windmill/windmill.obj", gl, meshProgramInfo);
   const chair = await parseAndLoadOBJ("./assets/chair/chair.obj", gl, meshProgramInfo);
   const desk = await parseAndLoadOBJ("./assets/desk/desk.obj", gl, meshProgramInfo);
+  const lampBody = await parseAndLoadOBJ("./assets/lamp/body.obj", gl, meshProgramInfo);
+  const lampHead = await parseAndLoadOBJ("./assets/lamp/head.obj", gl, meshProgramInfo);
+
+  const mainObject = lampBody;
 
   function render(time) {
     time *= 0.001;  // convert to seconds
@@ -180,11 +184,11 @@ async function main() {
 
     const fieldOfViewRadians = degToRad(60);
     const aspect = gl.canvas.clientWidth / gl.canvas.clientHeight;
-    const projection = twgl.m4.perspective(fieldOfViewRadians, aspect, windmill.zNear, windmill.zFar);
+    const projection = twgl.m4.perspective(fieldOfViewRadians, aspect, mainObject.zNear, mainObject.zFar);
 
     const up = [0, 1, 0];
     // Compute the camera's matrix using look at.
-    const camera = twgl.m4.lookAt(windmill.cameraPosition, windmill.cameraTarget, up);
+    const camera = twgl.m4.lookAt(mainObject.cameraPosition, mainObject.cameraTarget, up);
 
     // Make a view matrix from the camera matrix.
     const view = twgl.m4.inverse(camera);
@@ -193,7 +197,7 @@ async function main() {
       u_lightDirection: twgl.v3.normalize([-1, 3, 5]),
       u_view: view,
       u_projection: projection,
-      u_viewWorldPosition: windmill.cameraPosition,
+      u_viewWorldPosition: mainObject.cameraPosition,
     };
 
     gl.useProgram(meshProgramInfo.program);
@@ -201,17 +205,52 @@ async function main() {
     // calls gl.uniform
     twgl.setUniforms(meshProgramInfo, sharedUniforms);
 
+    /*
     const scale1 = Math.sin(time) / 2 + 1;
     const scale2 = Math.sin(time + Math.PI / 2) / 2 + 1;
     const scale3 = Math.sin(time + Math.PI) / 2 + 1;
 
-    renderObject(gl, meshProgramInfo, windmill.parts, [time + Math.PI, time + Math.PI, time + Math.PI], [-5 + Math.sin(time) * 3.5, -3 + Math.sin(time) * 3.5, 0 + Math.sin(time) * 3.5], [scale1, scale1, scale1]);
-    renderObject(gl, meshProgramInfo, chair.parts, [time, time, time], [5 + Math.sin(time + Math.PI) * 3.5, -3 + Math.sin(time + Math.PI) * 3.5, 0 + Math.sin(time + Math.PI) * 3.5], [scale2, scale2, scale2]);
-    renderObject(gl, meshProgramInfo, desk.parts, [time + Math.PI / 2, time + Math.PI / 2, time + Math.PI / 2], [Math.sin(time + Math.PI / 2) * 3.5, -3 + Math.sin(time + Math.PI / 2) * 3.5, Math.sin(time + Math.PI / 2) * 3.5], [scale3 * 5, scale3 * 5, scale3 * 5]);
+    renderObject(gl, meshProgramInfo, windmill, [time + Math.PI, time + Math.PI, time + Math.PI], [-5 + Math.sin(time) * 3.5, -3 + Math.sin(time) * 3.5, 0 + Math.sin(time) * 3.5], [scale1, scale1, scale1]);
+    renderObject(gl, meshProgramInfo, chair, [time, time, time], [5 + Math.sin(time + Math.PI) * 3.5, -3 + Math.sin(time + Math.PI) * 3.5, 0 + Math.sin(time + Math.PI) * 3.5], [scale2, scale2, scale2]);
+    renderObject(gl, meshProgramInfo, desk, [time + Math.PI / 2, time + Math.PI / 2, time + Math.PI / 2], [Math.sin(time + Math.PI / 2) * 3.5, -3 + Math.sin(time + Math.PI / 2) * 3.5, Math.sin(time + Math.PI / 2) * 3.5], [scale3 * 5, scale3 * 5, scale3 * 5]);
+    */
+    
+    const lampPosition = [0, -0.25, -0.1];
+    const lampYaw = time/2;
+    const lampHeadPitch = Math.sin(time) + 0.5;
+
+    renderLamp(lampPosition, lampYaw, lampHeadPitch);
 
     requestAnimationFrame(render);
   }
   requestAnimationFrame(render);
+
+  function renderLamp(lampPosition, lampYaw, lampHeadPitch) {
+    const relativeHeadPosition = [0.053379, 0.375211, 0.000011];
+    const absoluteHeadPosition = twgl.v3.add(lampPosition, relativeHeadPosition);
+
+    // The head position is not centered in the lamp, so to rotate the lamp we must find the position the head will
+    // take after the rotation. To do this we interpret the head position relative to the lamp as a 2D vector in the XZ
+    // plane, then rotate that vector to get the new position of the head.
+    let lampXYPosition = rotate2DVector([relativeHeadPosition[0], relativeHeadPosition[2]], -lampYaw);
+    lampXYPosition[0] += lampPosition[0];
+    lampXYPosition[1] += lampPosition[2];
+
+    const rotatedHeadPosition = [lampXYPosition[0], absoluteHeadPosition[1], lampXYPosition[1]];
+
+    renderObject(gl, meshProgramInfo, lampBody, [0, lampYaw, 0], lampPosition);
+    renderObject(gl, meshProgramInfo, lampHead, [0, lampYaw, lampHeadPitch], rotatedHeadPosition);
+  }
+}
+
+function rotate2DVector(vector, angle) {
+  const x = vector[0];
+  const y = vector[1];
+  const cos = Math.cos(angle);
+  const sin = Math.sin(angle);
+  const rotatedX = x * cos - y * sin;
+  const rotatedY = x * sin + y * cos;
+  return [rotatedX, rotatedY];
 }
 
 main();
