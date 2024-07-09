@@ -28,6 +28,7 @@
   "homepage": "https://github.com/CommandPromptGamer/trabalho-1-cg#readme",
   "dependencies": {
     "http-server": "^14.1.1",
+    "seedrandom": "^3.0.5",
     "twgl.js": "^5.5.4"
   }
 }

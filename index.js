@@ -177,18 +177,31 @@ async function main() {
   const windmill = await parseAndLoadOBJ("./assets/windmill/windmill.obj", gl, meshProgramInfo);
   const chair = await parseAndLoadOBJ("./assets/chair/chair.obj", gl, meshProgramInfo);
   const debugPlane = await parseAndLoadOBJ("./assets/debug/plane/debugPlane.obj", gl, meshProgramInfo);
-  const debugAxis = await parseAndLoadOBJ("./assets/debug/axis/debugAxis.obj", gl, meshProgramInfo);
+  const debugAxis = await parseAndLoadOBJ("./assets/debug/axis/debugAxisV2.obj", gl, meshProgramInfo);
   const debugGlobalAxis = await parseAndLoadOBJ("./assets/debug/axis/debugGlobalAxis.obj", gl, meshProgramInfo);
+  const blueNoiseOuterGridCell = await parseAndLoadOBJ("./assets/debug/blueNoise/blueNoiseOuterGridCell.obj", gl, meshProgramInfo);
+  const blueNoiseInnerGridCell = await parseAndLoadOBJ("./assets/debug/blueNoise/blueNoiseInnerGridCell.obj", gl, meshProgramInfo);
   const desk = await parseAndLoadOBJ("./assets/desk/desk.obj", gl, meshProgramInfo);
   const lampBody = await parseAndLoadOBJ("./assets/lamp/body.obj", gl, meshProgramInfo);
   const lampHead = await parseAndLoadOBJ("./assets/lamp/debugHead.obj", gl, meshProgramInfo);
   const lampHeadOffset = [0.053379, 0.375211, 0.000011];
 
-  const demo = "lamp"
-  let cameraPositionOffset = [0, 0, 0];
+  const demo = "blueNoise"; // "lamp", "objects", "blueNoise"
   
+  let cameraPositionOffset = [0, 0, 0];
   let mainObject = lampBody;
   let zFarMultiplier = 1;
+
+  var prng = new Math.seedrandom();
+  let positions;
+  let centers;
+  let timeSinceLastBlueNoiseReset = 0;
+
+  const blueNoiseWidth = 10;
+  const blueNoiseHeight = 10;
+  const blueNoiseGridSpacing = 1;
+  const blueNoiseInnerCellSize = 0.8;
+  const blueNoiseCenter = [0, 0];
 
   switch (demo) {
     case "lamp":
@@ -200,11 +213,22 @@ async function main() {
       mainObject = windmill;
       cameraPositionOffset = [0, 0, 0];
       break;
+    case "blueNoise":
+      mainObject = debugPlane;
+      cameraPositionOffset = [0, 5, -5];
+      
+      positions = blueNoise(blueNoiseWidth, blueNoiseHeight, blueNoiseGridSpacing, blueNoiseInnerCellSize, blueNoiseCenter, prng);
+      centers = blueNoiseCenters(blueNoiseWidth, blueNoiseHeight, blueNoiseGridSpacing, blueNoiseCenter);
+      break;
   }
 
+  let then = 0;
 
   function render(time) {
     time *= 0.001;  // convert to seconds
+
+    const deltaTime = time - then;
+    then = time;
 
     twgl.resizeCanvasToDisplaySize(gl.canvas);
     gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
@@ -252,6 +276,24 @@ async function main() {
         renderLampLookingAt(lampPosition, lampLookAt);
         renderObject(gl, meshProgramInfo, debugAxis, [0, 0, 0], lampLookAt);
         renderObject(gl, meshProgramInfo, debugPlane, [0, 0, 0], [0, 0, 0], [0.25, 0.25, 0.25]);
+        
+        break;
+      case "blueNoise":      
+        if (timeSinceLastBlueNoiseReset > 1) {
+          timeSinceLastBlueNoiseReset = 0;
+          
+          positions = blueNoise(blueNoiseWidth, blueNoiseHeight, blueNoiseGridSpacing, blueNoiseInnerCellSize, blueNoiseCenter, prng);
+        } else {
+          timeSinceLastBlueNoiseReset += deltaTime;
+        }
+
+        for (let i = 0; i < positions.length; i++) {
+          renderObject(gl, meshProgramInfo, debugAxis, [0, 0, 0], [positions[i][0], 0, positions[i][1]], [2, 2 , 2]);
+          renderObject(gl, meshProgramInfo, blueNoiseOuterGridCell, [0, 0, 0], [centers[i][0], 0, centers[i][1]], [blueNoiseGridSpacing, blueNoiseGridSpacing, blueNoiseGridSpacing]);
+          renderObject(gl, meshProgramInfo, blueNoiseInnerGridCell, [0, 0, 0], [centers[i][0], 0, centers[i][1]], [blueNoiseInnerCellSize, blueNoiseInnerCellSize, blueNoiseInnerCellSize]);
+        }
+
+        renderObject(gl, meshProgramInfo, debugPlane);
         
         break;
     }
@@ -303,6 +345,37 @@ function rotate2DVector(vector, angle) {
   const rotatedX = x * cos - y * sin;
   const rotatedY = x * sin + y * cos;
   return [rotatedX, rotatedY];
+}
+
+function blueNoise(width, height, gridSpacing, innerCellSize, center, prng) { 
+  const positions = new Array(width * height);
+  const offset = [center[0] - (width - 1) * gridSpacing / 2, center[1] - (height - 1) * gridSpacing / 2];
+  
+  for (let i = 0; i < width; i++) {
+    for (let j = 0; j < height; j++) {
+      let position = [i * gridSpacing + offset[0], j * gridSpacing + offset[1]];
+      position[0] += (prng() * 2 - 1) * innerCellSize / 2;
+      position[1] += (prng() * 2 - 1) * innerCellSize / 2;
+
+      positions[i * width + j] = position;
+    }
+  }
+
+  return positions;
+}
+
+function blueNoiseCenters(width, height, gridSpacing, center) {
+  const centers = new Array(width * height);
+  const offset = [center[0] - (width - 1) * gridSpacing / 2, center[1] - (height - 1) * gridSpacing / 2];
+  
+  for (let i = 0; i < width; i++) {
+    for (let j = 0; j < height; j++) {
+      let position = [i * gridSpacing + offset[0], j * gridSpacing + offset[1]];
+      centers[i * width + j] = position;
+    }
+  }
+
+  return centers;
 }
 
 main();
