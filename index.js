@@ -178,6 +178,7 @@ async function main() {
   const chair = await parseAndLoadOBJ("./assets/chair/chair.obj", gl, meshProgramInfo);
   const debugPlane = await parseAndLoadOBJ("./assets/debug/plane/debugPlane.obj", gl, meshProgramInfo);
   const debugAxis = await parseAndLoadOBJ("./assets/debug/axis/debugAxis.obj", gl, meshProgramInfo);
+  const debugGlobalAxis = await parseAndLoadOBJ("./assets/debug/axis/debugGlobalAxis.obj", gl, meshProgramInfo);
   const desk = await parseAndLoadOBJ("./assets/desk/desk.obj", gl, meshProgramInfo);
   const lampBody = await parseAndLoadOBJ("./assets/lamp/body.obj", gl, meshProgramInfo);
   const lampHead = await parseAndLoadOBJ("./assets/lamp/debugHead.obj", gl, meshProgramInfo);
@@ -210,7 +211,7 @@ async function main() {
     
     const up = [0, 1, 0];
     // Compute the camera's matrix using look at.
-    const camera = twgl.m4.lookAt([mainObject.cameraPosition[0], mainObject.cameraPosition[1], mainObject.cameraPosition[2] + 0.75], mainObject.cameraTarget, up);
+    const camera = twgl.m4.lookAt([mainObject.cameraPosition[0], mainObject.cameraPosition[1] + 0.25, mainObject.cameraPosition[2] + 0.75], mainObject.cameraTarget, up);
 
     // Make a view matrix from the camera matrix.
     const view = twgl.m4.inverse(camera);
@@ -249,6 +250,8 @@ async function main() {
         
         break;
     }
+
+    // renderObject(gl, meshProgramInfo, debugGlobalAxis);
 
     requestAnimationFrame(render);
   }
