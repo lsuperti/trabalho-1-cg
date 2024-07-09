@@ -179,6 +179,11 @@ async function main() {
   const debugPlane = await parseAndLoadOBJ("./assets/debug/plane/debugPlane.obj", gl, meshProgramInfo);
   const debugAxis = await parseAndLoadOBJ("./assets/debug/axis/debugAxisV2.obj", gl, meshProgramInfo);
   const debugGlobalAxis = await parseAndLoadOBJ("./assets/debug/axis/debugGlobalAxis.obj", gl, meshProgramInfo);
+  const debugArrow = await parseAndLoadOBJ("./assets/debug/arrow/debugArrow.obj", gl, meshProgramInfo);
+  const debugSquare = await parseAndLoadOBJ("./assets/debug/square/debugSquare.obj", gl, meshProgramInfo);
+  const debugCircle = await parseAndLoadOBJ("./assets/debug/circle/debugCircle.obj", gl, meshProgramInfo);
+  const debugCube = await parseAndLoadOBJ("./assets/debug/cube/debugCube.obj", gl, meshProgramInfo);
+  const debugSphere = await parseAndLoadOBJ("./assets/debug/sphere/debugSphere.obj", gl, meshProgramInfo);
   const blueNoiseOuterGridCell = await parseAndLoadOBJ("./assets/debug/blueNoise/blueNoiseOuterGridCell.obj", gl, meshProgramInfo);
   const blueNoiseInnerGridCell = await parseAndLoadOBJ("./assets/debug/blueNoise/blueNoiseInnerGridCell.obj", gl, meshProgramInfo);
   const desk = await parseAndLoadOBJ("./assets/desk/desk.obj", gl, meshProgramInfo);
@@ -186,7 +191,7 @@ async function main() {
   const lampHead = await parseAndLoadOBJ("./assets/lamp/debugHead.obj", gl, meshProgramInfo);
   const lampHeadOffset = [0.053379, 0.375211, 0.000011];
 
-  const demo = "blueNoise"; // "lamp", "objects", "blueNoise"
+  const demo = "debugObjects"; // "lamp", "objects", "blueNoise", "debugObjects"
   
   let cameraPositionOffset = [0, 0, 0];
   let mainObject = lampBody;
@@ -219,6 +224,10 @@ async function main() {
       
       positions = blueNoise(blueNoiseWidth, blueNoiseHeight, blueNoiseGridSpacing, blueNoiseInnerCellSize, blueNoiseCenter, prng);
       centers = blueNoiseCenters(blueNoiseWidth, blueNoiseHeight, blueNoiseGridSpacing, blueNoiseCenter);
+      break;
+    case "debugObjects":
+      mainObject = debugPlane;
+      cameraPositionOffset = [0.5, 1.5, -12];
       break;
   }
 
@@ -294,6 +303,17 @@ async function main() {
         }
 
         renderObject(gl, meshProgramInfo, debugPlane);
+        
+        break;
+      case "debugObjects":
+        renderObject(gl, meshProgramInfo, debugAxis, [0, 0, 0], [0.5, 0.5, -0.5], [2, 2, 2]);
+        renderObject(gl, meshProgramInfo, debugArrow, [0.7, 0.4, -0.7], [-0.75, 0.3, 0], [0.75, 0.75, 0.75]);
+        renderObject(gl, meshProgramInfo, debugPlane);
+        renderObject(gl, meshProgramInfo, debugGlobalAxis);
+        renderObject(gl, meshProgramInfo, debugSquare, [0, 0, 0], [-0.5, 0, 0.5], [0.5, 0.5, 0.5]);
+        renderObject(gl, meshProgramInfo, debugCube, [0, 0, 0], [0.5, 0, 0.5], [0.5, 0.5, 0.5]);
+        renderObject(gl, meshProgramInfo, debugCircle, [0, 0, 0], [-0.5, 0, -0.5], [0.25, 0.25, 0.25]);
+        renderObject(gl, meshProgramInfo, debugSphere, [0, 0, 0], [1, 0.75, -0.5], [0.25, 0.25, 0.25]);
         
         break;
     }
