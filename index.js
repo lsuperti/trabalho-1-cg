@@ -185,15 +185,20 @@ async function main() {
   const lampHeadOffset = [0.053379, 0.375211, 0.000011];
 
   const demo = "lamp"
+  let cameraPositionOffset = [0, 0, 0];
   
   let mainObject = lampBody;
+  let zFarMultiplier = 1;
 
   switch (demo) {
     case "lamp":
       mainObject = lampBody;
+      cameraPositionOffset = [0, 0.35, 0.75];
+      zFarMultiplier = 2;
       break;
     case "objects":
       mainObject = windmill;
+      cameraPositionOffset = [0, 0, 0];
       break;
   }
 
@@ -207,11 +212,11 @@ async function main() {
 
     const fieldOfViewRadians = degToRad(60);
     const aspect = gl.canvas.clientWidth / gl.canvas.clientHeight;
-    const projection = twgl.m4.perspective(fieldOfViewRadians, aspect, mainObject.zNear, mainObject.zFar * 2);
+    const projection = twgl.m4.perspective(fieldOfViewRadians, aspect, mainObject.zNear, mainObject.zFar * zFarMultiplier);
     
     const up = [0, 1, 0];
     // Compute the camera's matrix using look at.
-    const camera = twgl.m4.lookAt([mainObject.cameraPosition[0], mainObject.cameraPosition[1] + 0.25, mainObject.cameraPosition[2] + 0.75], mainObject.cameraTarget, up);
+    const camera = twgl.m4.lookAt(twgl.v3.add(mainObject.cameraPosition, cameraPositionOffset), mainObject.cameraTarget, up);
 
     // Make a view matrix from the camera matrix.
     const view = twgl.m4.inverse(camera);
@@ -240,13 +245,13 @@ async function main() {
         
         break;
       case "lamp":
-        const lampPosition = [Math.cos(time) * 0.25, -0.25, Math.sin(time) * 0.25];
+        const lampPosition = [Math.cos(time) * 0.25, 0, Math.sin(time) * 0.25];
         const lampLookAtRotatedRelative = rotate2DVector([0, 0.25 * (Math.sin(time) + 2)], time);
         const lampLookAt = [lampPosition[0] + lampLookAtRotatedRelative[0], lampPosition[1], lampPosition[2] + lampLookAtRotatedRelative[1]];
 
         renderLampLookingAt(lampPosition, lampLookAt);
         renderObject(gl, meshProgramInfo, debugAxis, [0, 0, 0], lampLookAt);
-        renderObject(gl, meshProgramInfo, debugPlane, [0, 0, 0], [0, -0.25, 0], [0.25, 0.25, 0.25]);
+        renderObject(gl, meshProgramInfo, debugPlane, [0, 0, 0], [0, 0, 0], [0.25, 0.25, 0.25]);
         
         break;
     }
