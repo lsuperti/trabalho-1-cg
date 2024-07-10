@@ -188,6 +188,7 @@ async function main() {
   const debugSphere = await parseAndLoadOBJ("./assets/debug/sphere/debugSphere.obj", gl, meshProgramInfo);
   const blueNoiseOuterGridCell = await parseAndLoadOBJ("./assets/debug/blueNoise/blueNoiseOuterGridCell.obj", gl, meshProgramInfo);
   const blueNoiseInnerGridCell = await parseAndLoadOBJ("./assets/debug/blueNoise/blueNoiseInnerGridCell.obj", gl, meshProgramInfo);
+  const debugCompassRose = await parseAndLoadOBJ("./assets/debug/compassRose/debugCompassRose.obj", gl, meshProgramInfo);
   
   const lampBody = await parseAndLoadOBJ("./assets/lamp/body.obj", gl, meshProgramInfo);
   const lampHead = await parseAndLoadOBJ("./assets/lamp/debugHead.obj", gl, meshProgramInfo);
@@ -196,7 +197,7 @@ async function main() {
   const deskBar = await parseAndLoadOBJ("./assets/desk/bar.obj", gl, meshProgramInfo);
   const deskTopTile = await parseAndLoadOBJ("./assets/desk/topTile.obj", gl, meshProgramInfo);
 
-  const demo = "desk"; // "objects", "lamp", "blueNoise", "debugObjects"
+  const demo = "debugObjects"; // "objects", "lamp", "blueNoise", "debugObjects"
   
   let cameraPositionOffset = [0, 0, 0];
   let mainObject = lampBody;
@@ -324,6 +325,7 @@ async function main() {
         renderObject(gl, meshProgramInfo, debugCube, [0.5, 0.25, 0.5], [0, 0, 0], [0.5, 0.5, 0.5]);
         renderObject(gl, meshProgramInfo, debugCircle, [-0.5, 0, -0.5], [0, 0, 0], [0.25, 0.25, 0.25]);
         renderObject(gl, meshProgramInfo, debugSphere, [1, 0.75, -0.5], [0, 0, 0], [0.25, 0.25, 0.25]);
+        renderObject(gl, meshProgramInfo, debugCompassRose, [1, 0, -1], [0, 0, 0], [0.5, 0.5, 0.5]);
         
         break;
       case "desk":
@@ -337,7 +339,7 @@ async function main() {
         break;
     }
 
-    renderObject(gl, meshProgramInfo, debugGlobalAxis);
+    //renderObject(gl, meshProgramInfo, debugGlobalAxis);
 
     requestAnimationFrame(render);
   }
