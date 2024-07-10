@@ -176,6 +176,8 @@ async function main() {
 
   const windmill = await parseAndLoadOBJ("./assets/windmill/windmill.obj", gl, meshProgramInfo);
   const chair = await parseAndLoadOBJ("./assets/chair/chair.obj", gl, meshProgramInfo);
+  const demoDesk = await parseAndLoadOBJ("./assets/demoDesk/desk.obj", gl, meshProgramInfo);
+  
   const debugPlane = await parseAndLoadOBJ("./assets/debug/plane/debugPlane.obj", gl, meshProgramInfo);
   const debugAxis = await parseAndLoadOBJ("./assets/debug/axis/debugAxisV2.obj", gl, meshProgramInfo);
   const debugGlobalAxis = await parseAndLoadOBJ("./assets/debug/axis/debugGlobalAxis.obj", gl, meshProgramInfo);
@@ -186,12 +188,15 @@ async function main() {
   const debugSphere = await parseAndLoadOBJ("./assets/debug/sphere/debugSphere.obj", gl, meshProgramInfo);
   const blueNoiseOuterGridCell = await parseAndLoadOBJ("./assets/debug/blueNoise/blueNoiseOuterGridCell.obj", gl, meshProgramInfo);
   const blueNoiseInnerGridCell = await parseAndLoadOBJ("./assets/debug/blueNoise/blueNoiseInnerGridCell.obj", gl, meshProgramInfo);
-  const desk = await parseAndLoadOBJ("./assets/desk/desk.obj", gl, meshProgramInfo);
+  
   const lampBody = await parseAndLoadOBJ("./assets/lamp/body.obj", gl, meshProgramInfo);
   const lampHead = await parseAndLoadOBJ("./assets/lamp/debugHead.obj", gl, meshProgramInfo);
   const lampHeadOffset = [0.053379, 0.375211, 0.000011];
 
-  const demo = "blueNoise"; // "objects", "lamp", "blueNoise", "debugObjects"
+  const deskBar = await parseAndLoadOBJ("./assets/desk/bar.obj", gl, meshProgramInfo);
+  const deskTopTile = await parseAndLoadOBJ("./assets/desk/topTile.obj", gl, meshProgramInfo);
+
+  const demo = "desk"; // "objects", "lamp", "blueNoise", "debugObjects"
   
   let cameraPositionOffset = [0, 0, 0];
   let mainObject = lampBody;
@@ -228,6 +233,11 @@ async function main() {
     case "debugObjects":
       mainObject = debugPlane;
       cameraPositionOffset = [0.5, 1.5, -12];
+      break;
+    case "desk":
+      mainObject = deskBar;
+      cameraPositionOffset = [0, 2.5, 1.5];
+      zFarMultiplier = 2;
       break;
   }
 
@@ -274,7 +284,7 @@ async function main() {
 
         renderObject(gl, meshProgramInfo, windmill, [-5 + Math.sin(time) * 3.5, -3 + Math.sin(time) * 3.5, 0 + Math.sin(time) * 3.5], [time + Math.PI, time + Math.PI, time + Math.PI], [scale1, scale1, scale1]);
         renderObject(gl, meshProgramInfo, chair, [5 + Math.sin(time + Math.PI) * 3.5, -3 + Math.sin(time + Math.PI) * 3.5, 0 + Math.sin(time + Math.PI) * 3.5], [time, time, time], [scale2, scale2, scale2]);
-        renderObject(gl, meshProgramInfo, desk, [Math.sin(time + Math.PI / 2) * 3.5, -3 + Math.sin(time + Math.PI / 2) * 3.5, Math.sin(time + Math.PI / 2) * 3.5], [time + Math.PI / 2, time + Math.PI / 2, time + Math.PI / 2], [scale3 * 5, scale3 * 5, scale3 * 5]);
+        renderObject(gl, meshProgramInfo, demoDesk, [Math.sin(time + Math.PI / 2) * 3.5, -3 + Math.sin(time + Math.PI / 2) * 3.5, Math.sin(time + Math.PI / 2) * 3.5], [time + Math.PI / 2, time + Math.PI / 2, time + Math.PI / 2], [scale3 * 5, scale3 * 5, scale3 * 5]);
         
         break;
       case "lamp":
@@ -316,13 +326,54 @@ async function main() {
         renderObject(gl, meshProgramInfo, debugSphere, [1, 0.75, -0.5], [0, 0, 0], [0.25, 0.25, 0.25]);
         
         break;
+      case "desk":
+        let deskPosition = [0, 0, 0];
+        let deskWidth = 2 + Math.sin(time);
+        let deskHeight = 1 + Math.sin(time) / 2;
+        let deskDepth = 1 + Math.cos(time) + 0.5;
+      
+        renderDesk(deskWidth, deskHeight, deskDepth, deskPosition);
+
+        break;
     }
 
-    // renderObject(gl, meshProgramInfo, debugGlobalAxis);
+    renderObject(gl, meshProgramInfo, debugGlobalAxis);
 
     requestAnimationFrame(render);
   }
   requestAnimationFrame(render);
+
+  function renderDesk(deskWidth, deskHeight, deskDepth, deskPosition, barThickness = 0.04, topThickness = 0.04) {
+    const legOffset = [deskWidth / 2 - barThickness / 2, deskHeight / 2 - topThickness / 2, deskDepth / 2 - barThickness / 2];
+
+    // Southeast leg
+    renderObject(gl, meshProgramInfo, deskBar, twgl.v3.add([legOffset[0], legOffset[1], legOffset[2]], deskPosition), [0, 0, 0], [barThickness, deskHeight - topThickness, barThickness]);
+    // Northwest leg
+    renderObject(gl, meshProgramInfo, deskBar, twgl.v3.add([legOffset[0], legOffset[1], -legOffset[2]], deskPosition), [0, 0, 0], [barThickness, deskHeight - topThickness, barThickness]);
+    // Northeast leg
+    renderObject(gl, meshProgramInfo, deskBar, twgl.v3.add([-legOffset[0], legOffset[1], -legOffset[2]], deskPosition), [0, 0, 0], [barThickness, deskHeight - topThickness, barThickness]);
+    // Southwest leg
+    renderObject(gl, meshProgramInfo, deskBar, twgl.v3.add([-legOffset[0], legOffset[1], legOffset[2]], deskPosition), [0, 0, 0], [barThickness, deskHeight - topThickness, barThickness]);
+
+    // South bar
+    renderObject(gl, meshProgramInfo, deskBar, twgl.v3.add([0, deskHeight - barThickness / 2 - topThickness, deskDepth / 2 - barThickness / 2], deskPosition), [0, 0, Math.PI / 2], [barThickness, deskWidth - barThickness * 2,barThickness]);
+    // North bar
+    renderObject(gl, meshProgramInfo, deskBar, twgl.v3.add([0, deskHeight - barThickness / 2 - topThickness, -deskDepth / 2 + barThickness / 2], deskPosition), [0, 0, Math.PI / 2], [barThickness, deskWidth - barThickness * 2,barThickness]);
+    // East bar
+    renderObject(gl, meshProgramInfo, deskBar, twgl.v3.add([deskWidth / 2 - barThickness / 2, deskHeight - barThickness / 2 - topThickness, 0], deskPosition), [Math.PI / 2, 0, 0], [barThickness, deskDepth - barThickness * 2,barThickness]);
+    // West bar
+    renderObject(gl, meshProgramInfo, deskBar, twgl.v3.add([-deskWidth / 2 + barThickness / 2, deskHeight - barThickness / 2 - topThickness, 0], deskPosition), [Math.PI / 2, 0, 0], [barThickness, deskDepth - barThickness * 2,barThickness]);
+
+    // The tile widths will be size that's closest to 1 (when exactly 1 there is no texture stretching).
+    const deskTopTileWidth = deskWidth / (Math.round(deskWidth) | 1); // When deskWidth is less than 0.5, the width will be the same as the deskWidth
+    const deskTopTileDepth = deskDepth / (Math.round(deskDepth) | 1); // Math.round(deskDepth) | 1 is 1 when Math.round(deskDepth) is 0
+
+    for (let i = 0; i < deskWidth / deskTopTileWidth; i++) {
+      for (let j = 0; j < deskDepth / deskTopTileDepth; j++) {
+        renderObject(gl, meshProgramInfo, deskTopTile, twgl.v3.add([(i + 0.5) * deskTopTileWidth - deskWidth / 2, deskHeight - topThickness, (j + 0.5) * deskTopTileDepth - deskDepth / 2], deskPosition), [0, 0, 0], [deskTopTileWidth, topThickness, deskTopTileDepth]);
+      }
+    }
+  }
 
   function renderLampLookingAt(lampPosition, lookAtPosition) {
     // The yaw does not consider the head offset
