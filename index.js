@@ -311,7 +311,7 @@ async function main() {
         renderObject(gl, meshProgramInfo, debugPlane);
         renderObject(gl, meshProgramInfo, debugGlobalAxis);
         renderObject(gl, meshProgramInfo, debugSquare, [-0.5, 0, 0.5], [0, 0, 0], [0.5, 0.5, 0.5]);
-        renderObject(gl, meshProgramInfo, debugCube, [0.5, 0, 0.5], [0, 0, 0], [0.5, 0.5, 0.5]);
+        renderObject(gl, meshProgramInfo, debugCube, [0.5, 0.25, 0.5], [0, 0, 0], [0.5, 0.5, 0.5]);
         renderObject(gl, meshProgramInfo, debugCircle, [-0.5, 0, -0.5], [0, 0, 0], [0.25, 0.25, 0.25]);
         renderObject(gl, meshProgramInfo, debugSphere, [1, 0.75, -0.5], [0, 0, 0], [0.25, 0.25, 0.25]);
         
