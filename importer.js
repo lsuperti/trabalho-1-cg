@@ -426,7 +426,7 @@ export async function parseAndLoadOBJ(objHref, gl, meshProgramInfo) {
   return { zNear, zFar, cameraPosition, cameraTarget, objOffset, parts };
 }
 
-export function renderObject(gl, meshProgramInfo, object, [xRotation, yRotation, zRotation] = [0, 0, 0], [xTranslation, yTranslation, zTranslation] = [0, 0, 0], [xScale, yScale, zScale] = [1, 1, 1]) {
+export function renderObject(gl, meshProgramInfo, object, [xTranslation, yTranslation, zTranslation] = [0, 0, 0], [xRotation, yRotation, zRotation] = [0, 0, 0], [xScale, yScale, zScale] = [1, 1, 1]) {
   var u_world = twgl.m4.translation(twgl.v3.create(xTranslation, yTranslation, zTranslation));
   u_world = twgl.m4.rotateX(u_world, xRotation);
   u_world = twgl.m4.rotateY(u_world, yRotation);

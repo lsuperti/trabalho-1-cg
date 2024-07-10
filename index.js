@@ -191,7 +191,7 @@ async function main() {
   const lampHead = await parseAndLoadOBJ("./assets/lamp/debugHead.obj", gl, meshProgramInfo);
   const lampHeadOffset = [0.053379, 0.375211, 0.000011];
 
-  const demo = "debugObjects"; // "lamp", "objects", "blueNoise", "debugObjects"
+  const demo = "blueNoise"; // "objects", "lamp", "blueNoise", "debugObjects"
   
   let cameraPositionOffset = [0, 0, 0];
   let mainObject = lampBody;
@@ -205,7 +205,7 @@ async function main() {
   const blueNoiseWidth = 10;
   const blueNoiseHeight = 10;
   const blueNoiseGridSpacing = 1;
-  const blueNoiseInnerCellSize = 0.8;
+  const blueNoiseInnerCellSize = 0.6;
   const blueNoiseCenter = [0, 0];
 
   switch (demo) {
@@ -272,9 +272,9 @@ async function main() {
         const scale2 = Math.sin(time + Math.PI / 2) / 2 + 1;
         const scale3 = Math.sin(time + Math.PI) / 2 + 1;
 
-        renderObject(gl, meshProgramInfo, windmill, [time + Math.PI, time + Math.PI, time + Math.PI], [-5 + Math.sin(time) * 3.5, -3 + Math.sin(time) * 3.5, 0 + Math.sin(time) * 3.5], [scale1, scale1, scale1]);
-        renderObject(gl, meshProgramInfo, chair, [time, time, time], [5 + Math.sin(time + Math.PI) * 3.5, -3 + Math.sin(time + Math.PI) * 3.5, 0 + Math.sin(time + Math.PI) * 3.5], [scale2, scale2, scale2]);
-        renderObject(gl, meshProgramInfo, desk, [time + Math.PI / 2, time + Math.PI / 2, time + Math.PI / 2], [Math.sin(time + Math.PI / 2) * 3.5, -3 + Math.sin(time + Math.PI / 2) * 3.5, Math.sin(time + Math.PI / 2) * 3.5], [scale3 * 5, scale3 * 5, scale3 * 5]);
+        renderObject(gl, meshProgramInfo, windmill, [-5 + Math.sin(time) * 3.5, -3 + Math.sin(time) * 3.5, 0 + Math.sin(time) * 3.5], [time + Math.PI, time + Math.PI, time + Math.PI], [scale1, scale1, scale1]);
+        renderObject(gl, meshProgramInfo, chair, [5 + Math.sin(time + Math.PI) * 3.5, -3 + Math.sin(time + Math.PI) * 3.5, 0 + Math.sin(time + Math.PI) * 3.5], [time, time, time], [scale2, scale2, scale2]);
+        renderObject(gl, meshProgramInfo, desk, [Math.sin(time + Math.PI / 2) * 3.5, -3 + Math.sin(time + Math.PI / 2) * 3.5, Math.sin(time + Math.PI / 2) * 3.5], [time + Math.PI / 2, time + Math.PI / 2, time + Math.PI / 2], [scale3 * 5, scale3 * 5, scale3 * 5]);
         
         break;
       case "lamp":
@@ -283,7 +283,7 @@ async function main() {
         const lampLookAt = [lampPosition[0] + lampLookAtRotatedRelative[0], lampPosition[1], lampPosition[2] + lampLookAtRotatedRelative[1]];
 
         renderLampLookingAt(lampPosition, lampLookAt);
-        renderObject(gl, meshProgramInfo, debugAxis, [0, 0, 0], lampLookAt);
+        renderObject(gl, meshProgramInfo, debugAxis, lampLookAt, [0, 0, 0]);
         renderObject(gl, meshProgramInfo, debugPlane, [0, 0, 0], [0, 0, 0], [0.25, 0.25, 0.25]);
         
         break;
@@ -297,23 +297,23 @@ async function main() {
         }
 
         for (let i = 0; i < positions.length; i++) {
-          renderObject(gl, meshProgramInfo, debugAxis, [0, 0, 0], [positions[i][0], 0, positions[i][1]], [2, 2 , 2]);
-          renderObject(gl, meshProgramInfo, blueNoiseOuterGridCell, [0, 0, 0], [centers[i][0], 0, centers[i][1]], [blueNoiseGridSpacing, blueNoiseGridSpacing, blueNoiseGridSpacing]);
-          renderObject(gl, meshProgramInfo, blueNoiseInnerGridCell, [0, 0, 0], [centers[i][0], 0, centers[i][1]], [blueNoiseInnerCellSize, blueNoiseInnerCellSize, blueNoiseInnerCellSize]);
+          renderObject(gl, meshProgramInfo, debugAxis, [positions[i][0], 0, positions[i][1]], [0, 0, 0], [2, 2 , 2]);
+          renderObject(gl, meshProgramInfo, blueNoiseOuterGridCell, [centers[i][0], 0, centers[i][1]], [0, 0, 0], [blueNoiseGridSpacing, blueNoiseGridSpacing, blueNoiseGridSpacing]);
+          renderObject(gl, meshProgramInfo, blueNoiseInnerGridCell, [centers[i][0], 0, centers[i][1]], [0, 0, 0], [blueNoiseInnerCellSize, blueNoiseInnerCellSize, blueNoiseInnerCellSize]);
         }
 
         renderObject(gl, meshProgramInfo, debugPlane);
         
         break;
       case "debugObjects":
-        renderObject(gl, meshProgramInfo, debugAxis, [0, 0, 0], [0.5, 0.5, -0.5], [2, 2, 2]);
-        renderObject(gl, meshProgramInfo, debugArrow, [0.7, 0.4, -0.7], [-0.75, 0.3, 0], [0.75, 0.75, 0.75]);
+        renderObject(gl, meshProgramInfo, debugAxis, [0.5, 0.5, -0.5], [0, 0, 0], [2, 2, 2]);
+        renderObject(gl, meshProgramInfo, debugArrow, [-0.75, 0.3, 0], [0.7, 0.4, -0.7], [0.75, 0.75, 0.75]);
         renderObject(gl, meshProgramInfo, debugPlane);
         renderObject(gl, meshProgramInfo, debugGlobalAxis);
-        renderObject(gl, meshProgramInfo, debugSquare, [0, 0, 0], [-0.5, 0, 0.5], [0.5, 0.5, 0.5]);
-        renderObject(gl, meshProgramInfo, debugCube, [0, 0, 0], [0.5, 0, 0.5], [0.5, 0.5, 0.5]);
-        renderObject(gl, meshProgramInfo, debugCircle, [0, 0, 0], [-0.5, 0, -0.5], [0.25, 0.25, 0.25]);
-        renderObject(gl, meshProgramInfo, debugSphere, [0, 0, 0], [1, 0.75, -0.5], [0.25, 0.25, 0.25]);
+        renderObject(gl, meshProgramInfo, debugSquare, [-0.5, 0, 0.5], [0, 0, 0], [0.5, 0.5, 0.5]);
+        renderObject(gl, meshProgramInfo, debugCube, [0.5, 0, 0.5], [0, 0, 0], [0.5, 0.5, 0.5]);
+        renderObject(gl, meshProgramInfo, debugCircle, [-0.5, 0, -0.5], [0, 0, 0], [0.25, 0.25, 0.25]);
+        renderObject(gl, meshProgramInfo, debugSphere, [1, 0.75, -0.5], [0, 0, 0], [0.25, 0.25, 0.25]);
         
         break;
     }
@@ -352,8 +352,8 @@ async function main() {
 
     const rotatedHeadPosition = [lampXYPosition[0], absoluteHeadPosition[1], lampXYPosition[1]];
 
-    renderObject(gl, meshProgramInfo, lampBody, [0, lampYaw, 0], lampPosition);
-    renderObject(gl, meshProgramInfo, lampHead, [0, lampYaw, lampHeadPitch + Math.PI/2], rotatedHeadPosition);
+    renderObject(gl, meshProgramInfo, lampBody, lampPosition, [0, lampYaw, 0]);
+    renderObject(gl, meshProgramInfo, lampHead, rotatedHeadPosition, [0, lampYaw, lampHeadPitch + Math.PI/2]);
   }
 }
 
