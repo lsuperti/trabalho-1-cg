@@ -234,8 +234,6 @@ async function main() {
     minorDecorations.concat(minorGenericObjects)
   ]
 
-  console.log(minorBiomeObjects);
-
   const majorGeneral = majorPlaceholderObjects;
   const majorGadgets = majorPlaceholderObjects;
   const majorAntiques = majorPlaceholderObjects;
@@ -461,13 +459,14 @@ async function main() {
         const renderDeskLegs = true;
         const renderDeskTop = true;
 
+        
         if (renderWorldAxis) {
           renderObject(gl, meshProgramInfo, debugGlobalAxis);
         }
-      
+        
         renderDesk(params.deskWidth, params.deskHeight, params.deskDepth, [0, 0, 0], renderDeskLegs, renderDeskTop);
         renderObject(gl, meshProgramInfo, debugPlane);
-
+        
         const scene = generateProceduralScene(seed, params);
 
         const pendingLamps = new Set();
@@ -553,8 +552,13 @@ async function main() {
               }
             }
           
-            renderLampLookingAt([pendingLamp[0], params.deskHeight, pendingLamp[1]], [bestCandidate[0], params.deskHeight, bestCandidate[1]], useLampDebugHead);
-            objectsNeedingLight.delete(bestCandidate);
+            // If there are no objects needing light left, the lamp will point to a random point on the desk
+            if (bestCandidate === undefined) {
+              renderLampLookingAt([pendingLamp[0], params.deskHeight, pendingLamp[1]], [(scene.objectSelectionPrng() * 2 - 1) * params.deskWidth / 2, params.deskHeight, (scene.objectSelectionPrng() * 2 - 1) * params.deskDepth / 2], useLampDebugHead);
+            } else {
+              renderLampLookingAt([pendingLamp[0], params.deskHeight, pendingLamp[1]], [bestCandidate[0], params.deskHeight, bestCandidate[1]], useLampDebugHead);
+              objectsNeedingLight.delete(bestCandidate);
+            }
           }
         }
         
