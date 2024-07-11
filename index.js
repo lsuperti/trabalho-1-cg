@@ -1,6 +1,7 @@
 "use strict";
 
 
+import { createNoise2D } from './node_modules/simplex-noise/dist/esm/simplex-noise.js';
 import { renderObject, parseAndLoadOBJ } from './importer.js';
 
 
@@ -189,6 +190,10 @@ async function main() {
   const blueNoiseOuterGridCell = await parseAndLoadOBJ("./assets/debug/blueNoise/blueNoiseOuterGridCell.obj", gl, meshProgramInfo);
   const blueNoiseInnerGridCell = await parseAndLoadOBJ("./assets/debug/blueNoise/blueNoiseInnerGridCell.obj", gl, meshProgramInfo);
   const debugCompassRose = await parseAndLoadOBJ("./assets/debug/compassRose/debugCompassRose.obj", gl, meshProgramInfo);
+  const debugRedSquare = await parseAndLoadOBJ("./assets/debug/areaSquare/red.obj", gl, meshProgramInfo);
+  const debugGreenSquare = await parseAndLoadOBJ("./assets/debug/areaSquare/green.obj", gl, meshProgramInfo);
+  const debugBlueSquare = await parseAndLoadOBJ("./assets/debug/areaSquare/blue.obj", gl, meshProgramInfo);
+  const debugYellowSquare = await parseAndLoadOBJ("./assets/debug/areaSquare/yellow.obj", gl, meshProgramInfo);
   
   const lampBody = await parseAndLoadOBJ("./assets/lamp/body.obj", gl, meshProgramInfo);
   const lampHead = await parseAndLoadOBJ("./assets/lamp/head.obj", gl, meshProgramInfo);
@@ -198,7 +203,7 @@ async function main() {
   const deskBar = await parseAndLoadOBJ("./assets/desk/bar.obj", gl, meshProgramInfo);
   const deskTopTile = await parseAndLoadOBJ("./assets/desk/topTile.obj", gl, meshProgramInfo);
 
-  const majorObjectDescriptions = [
+  const majorPlaceholderObjects = [
     { object: debugArrow, needsLight: false, type: "generic" },
     { object: debugCircle, needsLight: false, type: "generic" },
     { object: debugCube, needsLight: true, type: "generic" },
@@ -206,23 +211,62 @@ async function main() {
     { object: debugSquare, needsLight: false, type: "generic" }
   ];
 
-  const minorObjectDescriptions = [
+  const minorPlaceholderObjects = [
     { object: debugArrow, needsLight: false, type: "generic" },
     { object: debugCircle, needsLight: false, type: "generic" },
     { object: debugCube, needsLight: true, type: "generic" },
     { object: debugSphere, needsLight: true, type: "generic" },
     { object: debugSquare, needsLight: false, type: "generic" },
-    { needsLight: false, type: "lamp" }
   ];
+  
+  // TODO: replace the placeholders with actual objects
+  const minorGeneral = minorPlaceholderObjects;
+  const minorGadgets = minorPlaceholderObjects;
+  const minorAntiques = minorPlaceholderObjects;
+  const minorDecorations = minorPlaceholderObjects;
+  
+  const minorGenericObjects = [{ needsLight: false, type: "lamp" }];
+
+  const minorBiomeObjects = [
+    minorGeneral.concat(minorGenericObjects),
+    minorGadgets.concat(minorGenericObjects),
+    minorAntiques.concat(minorGenericObjects),
+    minorDecorations.concat(minorGenericObjects)
+  ]
+
+  console.log(minorBiomeObjects);
+
+  const majorGeneral = majorPlaceholderObjects;
+  const majorGadgets = majorPlaceholderObjects;
+  const majorAntiques = majorPlaceholderObjects;
+  const majorDecorations = majorPlaceholderObjects;
+
+  const majorGenericObjects = [];
+
+  const majorBiomeObjects = [
+    majorGeneral.concat(majorGenericObjects),
+    majorGadgets.concat(majorGenericObjects),
+    majorAntiques.concat(majorGenericObjects),
+    majorDecorations.concat(majorGenericObjects)
+  ]
+
+  const debugBiomeSquares = [
+    debugRedSquare,
+    debugGreenSquare,
+    debugBlueSquare,
+    debugYellowSquare
+  ]
 
   
   let cameraPositionOffset = [0, 0, 0];
   let mainObject = debugGlobalAxis;
   let zFarMultiplier = 1;
   
-  var blueNoiseDemoPrng;
+  let blueNoiseDemoPrng;
   let blueNoiseDemoPositions;
   let timeSinceLastBlueNoiseReset = 0;
+
+  let noiseDemoGenerator;
   
   const blueNoiseDemoWidth = 10;
   const blueNoiseDemoHeight = 10;
@@ -235,7 +279,7 @@ async function main() {
 
   let seed = Math.random();
   console.log("Seed: " + seed);  
-  const demo = "final"; // "objects", "lamp", "blueNoise", "debugObjects", "desk", "final"
+  const demo = "final"; // "objects", "lamp", "blueNoise", "debugObjects", "desk", "biomes", "final"
 
   switch (demo) {
     case "lamp":
@@ -253,7 +297,6 @@ async function main() {
       
       blueNoiseDemoPrng = new Math.seedrandom("blueNoiseDemo");
       blueNoiseDemoPositions = blueNoise(blueNoiseDemoWidth, blueNoiseDemoHeight, blueNoiseDemoGridSpacing, blueNoiseDemoInnerCellSize, blueNoiseDemoCenter, blueNoiseDemoPrng);
-      
       break;
     case "debugObjects":
       mainObject = debugPlane;
@@ -266,6 +309,13 @@ async function main() {
       overrideLookAt = true;
       lookAt = [0, 0.5, 0];
       zFarMultiplier = 2;
+      break;
+    case "biomes":
+      mainObject = debugPlane;
+      cameraPositionOffset = [0, 5, -5];
+
+      const biomesDemoPrng = new Math.seedrandom("biomesDemo");
+      noiseDemoGenerator = createNoise2D(biomesDemoPrng);
       break;
     case "final":
     default:
@@ -375,6 +425,17 @@ async function main() {
         renderDesk(deskWidth, deskHeight, deskDepth, deskPosition);
 
         break;
+      case "biomes":
+        const objects = [debugRedSquare, debugGreenSquare, debugBlueSquare, debugYellowSquare];
+
+        for (let i = -5; i < 5; i++) {
+          for (let j = -5; j < 5; j++) {
+            const biome = generateBiome(i, j, 4, noiseDemoGenerator, 10);
+            renderObject(gl, meshProgramInfo, objects[biome], [i + 0.5, 0, j + 0.5]);
+          }
+        }
+
+        break;
       case "final":
       default:
         const defaultParams = {
@@ -411,9 +472,13 @@ async function main() {
 
         const pendingLamps = new Set();
         const objectsNeedingLight = new Set();
+        const biomeGenerator = createNoise2D(scene.biomePrng);
 
         for (const majorObject of scene.majorObjects) {
-          const chosenObject = majorObjectDescriptions[Math.floor(scene.objectSelectionPrng() * majorObjectDescriptions.length)];
+          const biome = generateBiome(majorObject[0][0], majorObject[0][1], 4, biomeGenerator, 2.5);
+          renderObject(gl, meshProgramInfo, debugBiomeSquares[biome], [majorObject[1][0], params.deskHeight, majorObject[1][1]], [0, 0, 0], [params.objectSpacing, params.objectSpacing, params.objectSpacing]);
+          
+          const chosenObject = majorBiomeObjects[biome][Math.floor(scene.objectSelectionPrng() * majorBiomeObjects[biome].length)];
           
           if (chosenObject.type == "lamp") {
             pendingLamps.add(majorObject[0]);
@@ -441,8 +506,11 @@ async function main() {
 
         for (const minorObjects of scene.minorObjects) {
           for (const minorObject of minorObjects) {
-            const chosenObject = minorObjectDescriptions[Math.floor(scene.objectSelectionPrng() * minorObjectDescriptions.length)];
-              
+            const biome = generateBiome(minorObject[0][0], minorObject[0][1], 4, biomeGenerator, 2.5);
+            renderObject(gl, meshProgramInfo, debugBiomeSquares[biome], [minorObject[1][0], params.deskHeight, minorObject[1][1]], [0, 0, 0], [params.objectSpacing / params.blueNoiseSubdivisions, params.objectSpacing / params.blueNoiseSubdivisions, params.objectSpacing / params.blueNoiseSubdivisions]);
+            
+            const chosenObject = minorBiomeObjects[biome][Math.floor(scene.objectSelectionPrng() * minorBiomeObjects[biome].length)];
+
               if (chosenObject.type == "lamp") {
                 pendingLamps.add(minorObject[0]);
               } else {
@@ -498,6 +566,10 @@ async function main() {
     requestAnimationFrame(render);
   }
   requestAnimationFrame(render);
+
+  function generateBiome(row, col, numBiomes, noiseGenerator, noiseScale = 2.5) {
+    return Math.floor(((noiseGenerator(row / noiseScale, col / noiseScale) + 1) / 2) * numBiomes);
+  }
 
   function renderDesk(deskWidth, deskHeight, deskDepth, deskPosition, renderLegs = true, renderTop = true, barThickness = 0.04, topThickness = 0.04) {
     const legOffset = [deskWidth / 2 - barThickness / 2, deskHeight / 2 - topThickness / 2, deskDepth / 2 - barThickness / 2];
@@ -606,6 +678,7 @@ async function main() {
     const minorBlueNoisePrng = new Math.seedrandom(masterPrng());
     const blueNoiseSubdividePrng = new Math.seedrandom(masterPrng());
     const objectSelectionPrng = new Math.seedrandom(masterPrng());
+    const biomePrng = new Math.seedrandom(masterPrng());
     
     const majorObjectsInnerCellSize = params.objectSpacing - params.objectPadding * 2;
     
@@ -621,6 +694,7 @@ async function main() {
     }
 
     scene.objectSelectionPrng = objectSelectionPrng;
+    scene.biomePrng = biomePrng;
 
     return scene;
   }
