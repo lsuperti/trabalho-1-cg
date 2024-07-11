@@ -582,9 +582,12 @@ async function main() {
           for (const assignment of assignments) {
             const pendingLamp = pendingLamps[assignment[0]];
             const objectNeedingLight = objectsNeedingLight[assignment[1]];
-            renderLampLookingAt([pendingLamp[0], params.deskHeight, pendingLamp[1]], [objectNeedingLight[0], params.deskHeight, objectNeedingLight[1]], useLampDebugHead);
-            pendingLamps[assignment[0]] = null;
             
+            // Only make the lamp look at the object if it's within 75 centimeters
+            if (Math.sqrt(Math.pow(pendingLamp[0] - objectNeedingLight[0], 2) + Math.pow(pendingLamp[1] - objectNeedingLight[1], 2)) < 0.75) {
+              renderLampLookingAt([pendingLamp[0], params.deskHeight, pendingLamp[1]], [objectNeedingLight[0], params.deskHeight, objectNeedingLight[1]], useLampDebugHead);
+              pendingLamps[assignment[0]] = null;
+            }
           }
 
           // Render the remaining lamps pointing to random points on the desk
