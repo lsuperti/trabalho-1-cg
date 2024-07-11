@@ -203,46 +203,49 @@ async function main() {
   const deskBar = await parseAndLoadOBJ("./assets/desk/bar.obj", gl, meshProgramInfo);
   const deskTopTile = await parseAndLoadOBJ("./assets/desk/topTile.obj", gl, meshProgramInfo);
 
-  const majorPlaceholderObjects = [
-    { object: debugArrow, needsLight: false, type: "generic" },
-    { object: debugCircle, needsLight: false, type: "generic" },
-    { object: debugCube, needsLight: true, type: "generic" },
-    { object: debugSphere, needsLight: true, type: "generic" },
-    { object: debugSquare, needsLight: false, type: "generic" }
-  ];
-
-  const minorPlaceholderObjects = [
-    { object: debugArrow, needsLight: false, type: "generic" },
-    { object: debugCircle, needsLight: false, type: "generic" },
-    { object: debugCube, needsLight: true, type: "generic" },
-    { object: debugSphere, needsLight: true, type: "generic" },
-    { object: debugSquare, needsLight: false, type: "generic" },
+  const keys = await parseAndLoadOBJ("./assets/keys/keys.obj", gl, meshProgramInfo);
+  const waterBottle = await parseAndLoadOBJ("./assets/waterBottle/waterBottle.obj", gl, meshProgramInfo);
+  const notepad = await parseAndLoadOBJ("./assets/notepad/notepad.obj", gl, meshProgramInfo);
+  const coffeeMugLarge = await parseAndLoadOBJ("./assets/coffeeMug/large/large.obj", gl, meshProgramInfo);
+  const coffeeMugEspresso = await parseAndLoadOBJ("./assets/coffeeMug/espresso/espresso.obj", gl, meshProgramInfo);
+  const memoBlock = await parseAndLoadOBJ("./assets/memoBlock/memoBlock.obj", gl, meshProgramInfo);
+  const pencilHolder = await parseAndLoadOBJ("./assets/pencilHolder/pencilHolder.obj", gl, meshProgramInfo);
+  
+  const minorOffice = [
+    { object: keys, needsLight: false, type: "generic", rotationRange: Math.PI * 2},
+    { object: waterBottle, needsLight: false, type: "generic", rotationRange: Math.PI * 2 },
+    { object: coffeeMugLarge, needsLight: false, type: "generic", rotationRange: Math.PI * 2 },
+    { object: coffeeMugEspresso, needsLight: false, type: "generic", rotationRange: Math.PI * 2},
+    { object: memoBlock, needsLight: false, type: "generic", rotationRange: Math.PI * 2 },
+    { object: pencilHolder, needsLight: false, type: "generic", rotationRange: Math.PI * 2 },
   ];
   
-  // TODO: replace the placeholders with actual objects
-  const minorGeneral = minorPlaceholderObjects;
-  const minorGadgets = minorPlaceholderObjects;
-  const minorAntiques = minorPlaceholderObjects;
-  const minorDecorations = minorPlaceholderObjects;
+  // TODO: Add objects specific to each biome
+  const minorGadgets = minorOffice;
+  const minorAntiques = minorOffice;
+  const minorDecorations = minorOffice;
   
   const minorGenericObjects = [{ needsLight: false, type: "lamp" }];
 
   const minorBiomeObjects = [
-    minorGeneral.concat(minorGenericObjects),
+    minorOffice.concat(minorGenericObjects),
     minorGadgets.concat(minorGenericObjects),
     minorAntiques.concat(minorGenericObjects),
     minorDecorations.concat(minorGenericObjects)
   ]
 
-  const majorGeneral = majorPlaceholderObjects;
-  const majorGadgets = majorPlaceholderObjects;
-  const majorAntiques = majorPlaceholderObjects;
-  const majorDecorations = majorPlaceholderObjects;
+  const majorOffice = [
+    { object: notepad, needsLight: true, type: "generic", rotationRange: Math.PI / 10 },
+  ]
+
+  const majorGadgets = majorOffice;
+  const majorAntiques = majorOffice;
+  const majorDecorations = majorOffice;
 
   const majorGenericObjects = [];
 
   const majorBiomeObjects = [
-    majorGeneral.concat(majorGenericObjects),
+    majorOffice.concat(majorGenericObjects),
     majorGadgets.concat(majorGenericObjects),
     majorAntiques.concat(majorGenericObjects),
     majorDecorations.concat(majorGenericObjects)
@@ -277,7 +280,7 @@ async function main() {
 
   let seed = Math.random();
   console.log("Seed: " + seed);  
-  const demo = "final"; // "objects", "lamp", "blueNoise", "debugObjects", "desk", "biomes", "final"
+  const demo = "final"; // "objects", "lamp", "blueNoise", "debugObjects", "desk", "biomes", "singleObject", "final"
 
   switch (demo) {
     case "lamp":
@@ -314,6 +317,11 @@ async function main() {
 
       const biomesDemoPrng = new Math.seedrandom("biomesDemo");
       noiseDemoGenerator = createNoise2D(biomesDemoPrng);
+      break;
+    case "singleObject":
+      mainObject = pencilHolder;
+      cameraPositionOffset = [0, 0.1, 0.1];
+      zFarMultiplier = 2;
       break;
     case "final":
     default:
@@ -421,6 +429,7 @@ async function main() {
         let deskDepth = 1 + Math.cos(time) + 0.5;
       
         renderDesk(deskWidth, deskHeight, deskDepth, deskPosition);
+        renderObject(gl, meshProgramInfo, debugPlane);
 
         break;
       case "biomes":
@@ -434,6 +443,9 @@ async function main() {
         }
 
         break;
+      case "singleObject":
+        renderObject(gl, meshProgramInfo, mainObject, [0, 0, 0], [0, time, 0]);
+        renderObject(gl, meshProgramInfo, debugPlane);
       case "final":
       default:
         const defaultParams = {
@@ -453,6 +465,7 @@ async function main() {
         const renderWorldAxis = false;
         const renderBlueNoiseBounds = true;
         const renderBlueNoisePlaceholders = false;
+        const renderBiomeMap = true;
         const renderMajorObjects = true;
         const renderMinorObjects = true;
         const useLampDebugHead = true;
@@ -475,15 +488,18 @@ async function main() {
 
         for (const majorObject of scene.majorObjects) {
           const biome = generateBiome(majorObject[0][0], majorObject[0][1], 4, biomeGenerator, 2.5);
-          renderObject(gl, meshProgramInfo, debugBiomeSquares[biome], [majorObject[1][0], params.deskHeight, majorObject[1][1]], [0, 0, 0], [params.objectSpacing, params.objectSpacing, params.objectSpacing]);
+          if (renderBiomeMap) {
+            renderObject(gl, meshProgramInfo, debugBiomeSquares[biome], [majorObject[1][0], params.deskHeight, majorObject[1][1]], [0, 0, 0], [params.objectSpacing, params.objectSpacing, params.objectSpacing]);
+          }
           
           const chosenObject = majorBiomeObjects[biome][Math.floor(scene.objectSelectionPrng() * majorBiomeObjects[biome].length)];
+          const rotation = (scene.objectSelectionPrng() * 2 - 1) * chosenObject.rotationRange / 2;
           
           if (chosenObject.type == "lamp") {
             pendingLamps.add(majorObject[0]);
           } else {
             if (renderMajorObjects) {
-              renderObject(gl, meshProgramInfo, chosenObject.object, [majorObject[0][0], params.deskHeight, majorObject[0][1]], [0, 0, 0], [0.25, 0.25, 0.25]);
+              renderObject(gl, meshProgramInfo, chosenObject.object, [majorObject[0][0], params.deskHeight, majorObject[0][1]], [0, rotation, 0]);
             }
             
             if (chosenObject.needsLight) {
@@ -506,15 +522,20 @@ async function main() {
         for (const minorObjects of scene.minorObjects) {
           for (const minorObject of minorObjects) {
             const biome = generateBiome(minorObject[0][0], minorObject[0][1], 4, biomeGenerator, 2.5);
-            renderObject(gl, meshProgramInfo, debugBiomeSquares[biome], [minorObject[1][0], params.deskHeight, minorObject[1][1]], [0, 0, 0], [params.objectSpacing / params.blueNoiseSubdivisions, params.objectSpacing / params.blueNoiseSubdivisions, params.objectSpacing / params.blueNoiseSubdivisions]);
+            // Debug biome markers
+            if (renderBiomeMap) {
+              renderObject(gl, meshProgramInfo, debugBiomeSquares[biome], [minorObject[1][0], params.deskHeight, minorObject[1][1]], [0, 0, 0], [params.objectSpacing / params.blueNoiseSubdivisions, params.objectSpacing / params.blueNoiseSubdivisions, params.objectSpacing / params.blueNoiseSubdivisions]);
+            }
             
             const chosenObject = minorBiomeObjects[biome][Math.floor(scene.objectSelectionPrng() * minorBiomeObjects[biome].length)];
+            const rotation = (scene.objectSelectionPrng() * 2 - 1) * chosenObject.rotationRange / 2;
+
 
               if (chosenObject.type == "lamp") {
                 pendingLamps.add(minorObject[0]);
               } else {
                 if (renderMinorObjects) {
-                  renderObject(gl, meshProgramInfo, chosenObject.object, [minorObject[0][0], params.deskHeight, minorObject[0][1]], [0, 0, 0], [0.05, 0.05, 0.05]);
+                  renderObject(gl, meshProgramInfo, chosenObject.object, [minorObject[0][0], params.deskHeight, minorObject[0][1]], [0, rotation, 0]);
                 }
                 
                 if (chosenObject.needsLight) {
@@ -525,7 +546,7 @@ async function main() {
             
             // Debug
             if (renderBlueNoisePlaceholders) {
-              renderObject(gl, meshProgramInfo, debugAxis, [minorObject[0][0], params.deskHeight, minorObject[0][1]], [0, 0, 0], [1, 1, 1]);
+              renderObject(gl, meshProgramInfo, debugAxis, [minorObject[0][0], params.deskHeight, minorObject[0][1]]);
             }
             
             if (renderBlueNoiseBounds) {
@@ -540,6 +561,7 @@ async function main() {
             let bestCandidate;
             let shortestDistance = Infinity;
             
+            // TODO: replace this flawed assignment with Hungarian algorithm (munkres-js)
             for (const objectNeedingLight of objectsNeedingLight) {
               const distance = Math.sqrt(
               Math.pow(pendingLamp[0] - objectNeedingLight[0], 2) +
@@ -554,7 +576,7 @@ async function main() {
           
             // If there are no objects needing light left, the lamp will point to a random point on the desk
             if (bestCandidate === undefined) {
-              renderLampLookingAt([pendingLamp[0], params.deskHeight, pendingLamp[1]], [(scene.objectSelectionPrng() * 2 - 1) * params.deskWidth / 2, params.deskHeight, (scene.objectSelectionPrng() * 2 - 1) * params.deskDepth / 2], useLampDebugHead);
+              renderLampLookingAt([pendingLamp[0], params.deskHeight, pendingLamp[1]], [(scene.miscPrng() * 2 - 1) * params.deskWidth / 2, params.deskHeight, (scene.objectSelectionPrng() * 2 - 1) * params.deskDepth / 2], useLampDebugHead);
             } else {
               renderLampLookingAt([pendingLamp[0], params.deskHeight, pendingLamp[1]], [bestCandidate[0], params.deskHeight, bestCandidate[1]], useLampDebugHead);
               objectsNeedingLight.delete(bestCandidate);
@@ -683,6 +705,7 @@ async function main() {
     const blueNoiseSubdividePrng = new Math.seedrandom(masterPrng());
     const objectSelectionPrng = new Math.seedrandom(masterPrng());
     const biomePrng = new Math.seedrandom(masterPrng());
+    const miscPrng = new Math.seedrandom(masterPrng());
     
     const majorObjectsInnerCellSize = params.objectSpacing - params.objectPadding * 2;
     
@@ -699,6 +722,7 @@ async function main() {
 
     scene.objectSelectionPrng = objectSelectionPrng;
     scene.biomePrng = biomePrng;
+    scene.miscPrng = miscPrng;
 
     return scene;
   }

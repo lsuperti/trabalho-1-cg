@@ -1,0 +1,35 @@
+# Blender 4.1.0 MTL File: 'keys.blend'
+# www.blender.org
+
+newmtl KeyTag
+Ns 250.000000
+Ka 1.000000 1.000000 1.000000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni 1.500000
+d 1.000000
+illum 2
+map_Kd KeyTag_baseColor.png
+map_Bump KeyTag_normal.png
+
+newmtl Ring
+Ns 250.000000
+Ka 1.000000 1.000000 1.000000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni 1.500000
+d 1.000000
+illum 2
+map_Kd Ring_baseColor.png
+map_Bump Ring_normal.png
+
+newmtl material
+Ns 250.000000
+Ka 1.000000 1.000000 1.000000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni 1.500000
+d 1.000000
+illum 2
+map_Kd material_baseColor.png
+map_Bump material_normal.png
