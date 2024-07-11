@@ -191,28 +191,51 @@ async function main() {
   const debugCompassRose = await parseAndLoadOBJ("./assets/debug/compassRose/debugCompassRose.obj", gl, meshProgramInfo);
   
   const lampBody = await parseAndLoadOBJ("./assets/lamp/body.obj", gl, meshProgramInfo);
-  const lampHead = await parseAndLoadOBJ("./assets/lamp/debugHead.obj", gl, meshProgramInfo);
+  const lampHead = await parseAndLoadOBJ("./assets/lamp/head.obj", gl, meshProgramInfo);
+  const debugLampHead = await parseAndLoadOBJ("./assets/lamp/debugHead.obj", gl, meshProgramInfo);
   const lampHeadOffset = [0.053379, 0.375211, 0.000011];
 
   const deskBar = await parseAndLoadOBJ("./assets/desk/bar.obj", gl, meshProgramInfo);
   const deskTopTile = await parseAndLoadOBJ("./assets/desk/topTile.obj", gl, meshProgramInfo);
 
-  const demo = "debugObjects"; // "objects", "lamp", "blueNoise", "debugObjects"
+  const majorObjectDescriptions = [
+    { object: debugArrow, needsLight: false, type: "generic" },
+    { object: debugCircle, needsLight: false, type: "generic" },
+    { object: debugCube, needsLight: true, type: "generic" },
+    { object: debugSphere, needsLight: true, type: "generic" },
+    { object: debugSquare, needsLight: false, type: "generic" }
+  ];
+
+  const minorObjectDescriptions = [
+    { object: debugArrow, needsLight: false, type: "generic" },
+    { object: debugCircle, needsLight: false, type: "generic" },
+    { object: debugCube, needsLight: true, type: "generic" },
+    { object: debugSphere, needsLight: true, type: "generic" },
+    { object: debugSquare, needsLight: false, type: "generic" },
+    { needsLight: false, type: "lamp" }
+  ];
+
   
   let cameraPositionOffset = [0, 0, 0];
-  let mainObject = lampBody;
+  let mainObject = debugGlobalAxis;
   let zFarMultiplier = 1;
-
-  var prng = new Math.seedrandom();
-  let positions;
-  let centers;
+  
+  var blueNoiseDemoPrng;
+  let blueNoiseDemoPositions;
   let timeSinceLastBlueNoiseReset = 0;
+  
+  const blueNoiseDemoWidth = 10;
+  const blueNoiseDemoHeight = 10;
+  const blueNoiseDemoGridSpacing = 1;
+  const blueNoiseDemoInnerCellSize = 0.6;
+  const blueNoiseDemoCenter = [0, 0];
+  
+  let overrideLookAt = false;
+  let lookAt = [0, 0, 0];
 
-  const blueNoiseWidth = 10;
-  const blueNoiseHeight = 10;
-  const blueNoiseGridSpacing = 1;
-  const blueNoiseInnerCellSize = 0.6;
-  const blueNoiseCenter = [0, 0];
+  let seed = Math.random();
+  console.log("Seed: " + seed);  
+  const demo = "final"; // "objects", "lamp", "blueNoise", "debugObjects", "desk", "final"
 
   switch (demo) {
     case "lamp":
@@ -228,17 +251,27 @@ async function main() {
       mainObject = debugPlane;
       cameraPositionOffset = [0, 5, -5];
       
-      positions = blueNoise(blueNoiseWidth, blueNoiseHeight, blueNoiseGridSpacing, blueNoiseInnerCellSize, blueNoiseCenter, prng);
-      centers = blueNoiseCenters(blueNoiseWidth, blueNoiseHeight, blueNoiseGridSpacing, blueNoiseCenter);
+      blueNoiseDemoPrng = new Math.seedrandom("blueNoiseDemo");
+      blueNoiseDemoPositions = blueNoise(blueNoiseDemoWidth, blueNoiseDemoHeight, blueNoiseDemoGridSpacing, blueNoiseDemoInnerCellSize, blueNoiseDemoCenter, blueNoiseDemoPrng);
+      
       break;
     case "debugObjects":
       mainObject = debugPlane;
-      cameraPositionOffset = [0.5, 1.5, -12];
+      overrideLookAt = true;
+      cameraPositionOffset = [0.5, 1.5, 2];
       break;
     case "desk":
       mainObject = deskBar;
-      cameraPositionOffset = [0, 2.5, 1.5];
+      cameraPositionOffset = [0, 2.5, 4];
+      overrideLookAt = true;
+      lookAt = [0, 0.5, 0];
       zFarMultiplier = 2;
+      break;
+    case "final":
+    default:
+      overrideLookAt = true;
+      lookAt = [0, 1, 0];
+      cameraPositionOffset = [0, 2.5, 2];
       break;
   }
 
@@ -260,7 +293,12 @@ async function main() {
     
     const up = [0, 1, 0];
     // Compute the camera's matrix using look at.
-    const camera = twgl.m4.lookAt(twgl.v3.add(mainObject.cameraPosition, cameraPositionOffset), mainObject.cameraTarget, up);
+    let camera;
+    if (!overrideLookAt) {
+      camera = twgl.m4.lookAt(twgl.v3.add(mainObject.cameraPosition, cameraPositionOffset), mainObject.cameraTarget, up);
+    } else {
+      camera = twgl.m4.lookAt(cameraPositionOffset, lookAt, up);
+    }
 
     // Make a view matrix from the camera matrix.
     const view = twgl.m4.inverse(camera);
@@ -298,19 +336,19 @@ async function main() {
         renderObject(gl, meshProgramInfo, debugPlane, [0, 0, 0], [0, 0, 0], [0.25, 0.25, 0.25]);
         
         break;
-      case "blueNoise":      
+      case "blueNoise":
         if (timeSinceLastBlueNoiseReset > 1) {
           timeSinceLastBlueNoiseReset = 0;
           
-          positions = blueNoise(blueNoiseWidth, blueNoiseHeight, blueNoiseGridSpacing, blueNoiseInnerCellSize, blueNoiseCenter, prng);
+          blueNoiseDemoPositions = blueNoise(blueNoiseDemoWidth, blueNoiseDemoHeight, blueNoiseDemoGridSpacing, blueNoiseDemoInnerCellSize, blueNoiseDemoCenter, blueNoiseDemoPrng);
         } else {
           timeSinceLastBlueNoiseReset += deltaTime;
         }
 
-        for (let i = 0; i < positions.length; i++) {
-          renderObject(gl, meshProgramInfo, debugAxis, [positions[i][0], 0, positions[i][1]], [0, 0, 0], [2, 2 , 2]);
-          renderObject(gl, meshProgramInfo, blueNoiseOuterGridCell, [centers[i][0], 0, centers[i][1]], [0, 0, 0], [blueNoiseGridSpacing, blueNoiseGridSpacing, blueNoiseGridSpacing]);
-          renderObject(gl, meshProgramInfo, blueNoiseInnerGridCell, [centers[i][0], 0, centers[i][1]], [0, 0, 0], [blueNoiseInnerCellSize, blueNoiseInnerCellSize, blueNoiseInnerCellSize]);
+        for (const position of blueNoiseDemoPositions) {
+          renderObject(gl, meshProgramInfo, debugAxis, [position[0][0], 0, position[0][1]], [0, 0, 0], [2, 2 , 2]);
+          renderObject(gl, meshProgramInfo, blueNoiseOuterGridCell,  [position[1][0], 0, position[1][1]], [0, 0, 0], [blueNoiseDemoGridSpacing, blueNoiseDemoGridSpacing, blueNoiseDemoGridSpacing]);
+          renderObject(gl, meshProgramInfo, blueNoiseInnerGridCell,  [position[1][0], 0, position[1][1]], [0, 0, 0], [blueNoiseDemoInnerCellSize, blueNoiseDemoInnerCellSize, blueNoiseDemoInnerCellSize]);
         }
 
         renderObject(gl, meshProgramInfo, debugPlane);
@@ -337,6 +375,122 @@ async function main() {
         renderDesk(deskWidth, deskHeight, deskDepth, deskPosition);
 
         break;
+      case "final":
+      default:
+        const defaultParams = {
+          deskWidth: 2.5,
+          deskHeight: 1,
+          deskDepth: 1.5,
+          
+          objectSpacing: 0.5,
+          objectPadding: 0.1,
+
+          majorObjectIncidence: 0.25,
+          blueNoiseSubdivisions: 2,
+        }
+
+        const params = defaultParams;
+
+        const renderWorldAxis = false;
+        const renderBlueNoiseBounds = true;
+        const renderBlueNoisePlaceholders = false;
+        const renderMajorObjects = true;
+        const renderMinorObjects = true;
+        const useLampDebugHead = true;
+        const renderDeskLegs = true;
+        const renderDeskTop = true;
+
+        if (renderWorldAxis) {
+          renderObject(gl, meshProgramInfo, debugGlobalAxis);
+        }
+      
+        renderDesk(params.deskWidth, params.deskHeight, params.deskDepth, [0, 0, 0], renderDeskLegs, renderDeskTop);
+        renderObject(gl, meshProgramInfo, debugPlane);
+
+        const scene = generateProceduralScene(seed, params);
+
+        const pendingLamps = new Set();
+        const objectsNeedingLight = new Set();
+
+        for (const majorObject of scene.majorObjects) {
+          const chosenObject = majorObjectDescriptions[Math.floor(scene.objectSelectionPrng() * majorObjectDescriptions.length)];
+          
+          if (chosenObject.type == "lamp") {
+            pendingLamps.add(majorObject[0]);
+          } else {
+            if (renderMajorObjects) {
+              renderObject(gl, meshProgramInfo, chosenObject.object, [majorObject[0][0], params.deskHeight, majorObject[0][1]], [0, 0, 0], [0.25, 0.25, 0.25]);
+            }
+            
+            if (chosenObject.needsLight) {
+              objectsNeedingLight.add(majorObject[0]);
+            }
+          }
+
+
+          // Debug
+          if (renderBlueNoisePlaceholders) {
+            renderObject(gl, meshProgramInfo, debugAxis, [majorObject[0][0], params.deskHeight, majorObject[0][1]], [0, 0, 0], [2, 2, 2]);
+          }
+          
+          if (renderBlueNoiseBounds) {
+            renderObject(gl, meshProgramInfo, blueNoiseOuterGridCell, [majorObject[1][0], params.deskHeight, majorObject[1][1]], [0, 0, 0], [params.objectSpacing, params.objectSpacing, params.objectSpacing]);
+            renderObject(gl, meshProgramInfo, blueNoiseInnerGridCell, [majorObject[1][0], params.deskHeight, majorObject[1][1]], [0, 0, 0], [params.objectSpacing - params.objectPadding * 2, params.objectSpacing - params.objectPadding * 2, params.objectSpacing - params.objectPadding * 2]);
+          }
+        }
+
+        for (const minorObjects of scene.minorObjects) {
+          for (const minorObject of minorObjects) {
+            const chosenObject = minorObjectDescriptions[Math.floor(scene.objectSelectionPrng() * minorObjectDescriptions.length)];
+              
+              if (chosenObject.type == "lamp") {
+                pendingLamps.add(minorObject[0]);
+              } else {
+                if (renderMinorObjects) {
+                  renderObject(gl, meshProgramInfo, chosenObject.object, [minorObject[0][0], params.deskHeight, minorObject[0][1]], [0, 0, 0], [0.05, 0.05, 0.05]);
+                }
+                
+                if (chosenObject.needsLight) {
+                  objectsNeedingLight.add(minorObject[0]);
+                }
+              }
+            
+            
+            // Debug
+            if (renderBlueNoisePlaceholders) {
+              renderObject(gl, meshProgramInfo, debugAxis, [minorObject[0][0], params.deskHeight, minorObject[0][1]], [0, 0, 0], [1, 1, 1]);
+            }
+            
+            if (renderBlueNoiseBounds) {
+              renderObject(gl, meshProgramInfo, blueNoiseOuterGridCell, [minorObject[1][0], params.deskHeight, minorObject[1][1]], [0, 0, 0], [params.objectSpacing / 2, params.objectSpacing / 2, params.objectSpacing / 2], [0.5, 0.5, 0.5]);
+              renderObject(gl, meshProgramInfo, blueNoiseInnerGridCell, [minorObject[1][0], params.deskHeight, minorObject[1][1]], [0, 0, 0], [params.objectSpacing / 2 - params.objectPadding, params.objectSpacing / 2 - params.objectPadding, params.objectSpacing / 2 - params.objectPadding], [0.5, 0.5, 0.5]);
+            }
+          }
+        }
+
+        if (renderMinorObjects) {
+          for (const pendingLamp of pendingLamps) {
+            let bestCandidate;
+            let shortestDistance = Infinity;
+            
+            for (const objectNeedingLight of objectsNeedingLight) {
+              const distance = Math.sqrt(
+              Math.pow(pendingLamp[0] - objectNeedingLight[0], 2) +
+              Math.pow(pendingLamp[1] - objectNeedingLight[1], 2)
+              );
+
+              if (distance < shortestDistance) {
+                shortestDistance = distance;
+                bestCandidate = objectNeedingLight;
+              }
+            }
+          
+            renderLampLookingAt([pendingLamp[0], params.deskHeight, pendingLamp[1]], [bestCandidate[0], params.deskHeight, bestCandidate[1]], useLampDebugHead);
+            objectsNeedingLight.delete(bestCandidate);
+          }
+        }
+        
+        break;
     }
 
     //renderObject(gl, meshProgramInfo, debugGlobalAxis);
@@ -345,39 +499,43 @@ async function main() {
   }
   requestAnimationFrame(render);
 
-  function renderDesk(deskWidth, deskHeight, deskDepth, deskPosition, barThickness = 0.04, topThickness = 0.04) {
+  function renderDesk(deskWidth, deskHeight, deskDepth, deskPosition, renderLegs = true, renderTop = true, barThickness = 0.04, topThickness = 0.04) {
     const legOffset = [deskWidth / 2 - barThickness / 2, deskHeight / 2 - topThickness / 2, deskDepth / 2 - barThickness / 2];
 
-    // Southeast leg
-    renderObject(gl, meshProgramInfo, deskBar, twgl.v3.add([legOffset[0], legOffset[1], legOffset[2]], deskPosition), [0, 0, 0], [barThickness, deskHeight - topThickness, barThickness]);
-    // Northwest leg
-    renderObject(gl, meshProgramInfo, deskBar, twgl.v3.add([legOffset[0], legOffset[1], -legOffset[2]], deskPosition), [0, 0, 0], [barThickness, deskHeight - topThickness, barThickness]);
-    // Northeast leg
-    renderObject(gl, meshProgramInfo, deskBar, twgl.v3.add([-legOffset[0], legOffset[1], -legOffset[2]], deskPosition), [0, 0, 0], [barThickness, deskHeight - topThickness, barThickness]);
-    // Southwest leg
-    renderObject(gl, meshProgramInfo, deskBar, twgl.v3.add([-legOffset[0], legOffset[1], legOffset[2]], deskPosition), [0, 0, 0], [barThickness, deskHeight - topThickness, barThickness]);
+    if (renderLegs) {
+      // Southeast leg
+      renderObject(gl, meshProgramInfo, deskBar, twgl.v3.add([legOffset[0], legOffset[1], legOffset[2]], deskPosition), [0, 0, 0], [barThickness, deskHeight - topThickness, barThickness]);
+      // Northwest leg
+      renderObject(gl, meshProgramInfo, deskBar, twgl.v3.add([legOffset[0], legOffset[1], -legOffset[2]], deskPosition), [0, 0, 0], [barThickness, deskHeight - topThickness, barThickness]);
+      // Northeast leg
+      renderObject(gl, meshProgramInfo, deskBar, twgl.v3.add([-legOffset[0], legOffset[1], -legOffset[2]], deskPosition), [0, 0, 0], [barThickness, deskHeight - topThickness, barThickness]);
+      // Southwest leg
+      renderObject(gl, meshProgramInfo, deskBar, twgl.v3.add([-legOffset[0], legOffset[1], legOffset[2]], deskPosition), [0, 0, 0], [barThickness, deskHeight - topThickness, barThickness]);
+      
+      // South bar
+      renderObject(gl, meshProgramInfo, deskBar, twgl.v3.add([0, deskHeight - barThickness / 2 - topThickness, deskDepth / 2 - barThickness / 2], deskPosition), [0, 0, Math.PI / 2], [barThickness, deskWidth - barThickness * 2,barThickness]);
+      // North bar
+      renderObject(gl, meshProgramInfo, deskBar, twgl.v3.add([0, deskHeight - barThickness / 2 - topThickness, -deskDepth / 2 + barThickness / 2], deskPosition), [0, 0, Math.PI / 2], [barThickness, deskWidth - barThickness * 2,barThickness]);
+      // East bar
+      renderObject(gl, meshProgramInfo, deskBar, twgl.v3.add([deskWidth / 2 - barThickness / 2, deskHeight - barThickness / 2 - topThickness, 0], deskPosition), [Math.PI / 2, 0, 0], [barThickness, deskDepth - barThickness * 2,barThickness]);
+      // West bar
+      renderObject(gl, meshProgramInfo, deskBar, twgl.v3.add([-deskWidth / 2 + barThickness / 2, deskHeight - barThickness / 2 - topThickness, 0], deskPosition), [Math.PI / 2, 0, 0], [barThickness, deskDepth - barThickness * 2,barThickness]);
+    }
 
-    // South bar
-    renderObject(gl, meshProgramInfo, deskBar, twgl.v3.add([0, deskHeight - barThickness / 2 - topThickness, deskDepth / 2 - barThickness / 2], deskPosition), [0, 0, Math.PI / 2], [barThickness, deskWidth - barThickness * 2,barThickness]);
-    // North bar
-    renderObject(gl, meshProgramInfo, deskBar, twgl.v3.add([0, deskHeight - barThickness / 2 - topThickness, -deskDepth / 2 + barThickness / 2], deskPosition), [0, 0, Math.PI / 2], [barThickness, deskWidth - barThickness * 2,barThickness]);
-    // East bar
-    renderObject(gl, meshProgramInfo, deskBar, twgl.v3.add([deskWidth / 2 - barThickness / 2, deskHeight - barThickness / 2 - topThickness, 0], deskPosition), [Math.PI / 2, 0, 0], [barThickness, deskDepth - barThickness * 2,barThickness]);
-    // West bar
-    renderObject(gl, meshProgramInfo, deskBar, twgl.v3.add([-deskWidth / 2 + barThickness / 2, deskHeight - barThickness / 2 - topThickness, 0], deskPosition), [Math.PI / 2, 0, 0], [barThickness, deskDepth - barThickness * 2,barThickness]);
-
-    // The tile widths will be size that's closest to 1 (when exactly 1 there is no texture stretching).
-    const deskTopTileWidth = deskWidth / (Math.round(deskWidth) | 1); // When deskWidth is less than 0.5, the width will be the same as the deskWidth
-    const deskTopTileDepth = deskDepth / (Math.round(deskDepth) | 1); // Math.round(deskDepth) | 1 is 1 when Math.round(deskDepth) is 0
-
-    for (let i = 0; i < deskWidth / deskTopTileWidth; i++) {
-      for (let j = 0; j < deskDepth / deskTopTileDepth; j++) {
-        renderObject(gl, meshProgramInfo, deskTopTile, twgl.v3.add([(i + 0.5) * deskTopTileWidth - deskWidth / 2, deskHeight - topThickness, (j + 0.5) * deskTopTileDepth - deskDepth / 2], deskPosition), [0, 0, 0], [deskTopTileWidth, topThickness, deskTopTileDepth]);
+    if (renderTop) {
+      // The tile widths will be size that's closest to 1 (when exactly 1 there is no texture stretching).
+      const deskTopTileWidth = deskWidth / (Math.round(deskWidth) | 1); // When deskWidth is less than 0.5, the width will be the same as the deskWidth
+      const deskTopTileDepth = deskDepth / (Math.round(deskDepth) | 1); // Math.round(deskDepth) | 1 is 1 when Math.round(deskDepth) is 0
+      
+      for (let i = 0; i < deskWidth / deskTopTileWidth; i++) {
+        for (let j = 0; j < deskDepth / deskTopTileDepth; j++) {
+          renderObject(gl, meshProgramInfo, deskTopTile, twgl.v3.add([(i + 0.5) * deskTopTileWidth - deskWidth / 2, deskHeight - topThickness, (j + 0.5) * deskTopTileDepth - deskDepth / 2], deskPosition), [0, 0, 0], [deskTopTileWidth, topThickness, deskTopTileDepth]);
+        }
       }
     }
   }
 
-  function renderLampLookingAt(lampPosition, lookAtPosition) {
+  function renderLampLookingAt(lampPosition, lookAtPosition, debugHead = false) {
     // The yaw does not consider the head offset
     let lampDirection = twgl.v3.subtract(lookAtPosition, lampPosition);
     const lampYaw = -Math.atan2(lampDirection[2], lampDirection[0]);
@@ -390,10 +548,10 @@ async function main() {
     lampDirection = twgl.v3.subtract(lookAtPosition, lampHeadPosition);
     const lampHeadPitch = Math.atan2(lampDirection[1], Math.sqrt(lampDirection[0] * lampDirection[0] + lampDirection[2] * lampDirection[2]));
 
-    renderLamp(lampPosition, lampYaw, lampHeadPitch);
+    renderLamp(lampPosition, lampYaw, lampHeadPitch, debugHead);
   }
 
-  function renderLamp(lampPosition, lampYaw, lampHeadPitch) {
+  function renderLamp(lampPosition, lampYaw, lampHeadPitch, debugHead = false) {
     const absoluteHeadPosition = twgl.v3.add(lampPosition, lampHeadOffset);
 
     // The head position is not centered in the lamp, so to rotate the lamp we must find the position the head will
@@ -406,49 +564,67 @@ async function main() {
     const rotatedHeadPosition = [lampXYPosition[0], absoluteHeadPosition[1], lampXYPosition[1]];
 
     renderObject(gl, meshProgramInfo, lampBody, lampPosition, [0, lampYaw, 0]);
-    renderObject(gl, meshProgramInfo, lampHead, rotatedHeadPosition, [0, lampYaw, lampHeadPitch + Math.PI/2]);
+    renderObject(gl, meshProgramInfo, debugHead ? debugLampHead : lampHead, rotatedHeadPosition, [0, lampYaw, lampHeadPitch + Math.PI/2]);
   }
-}
-
-function rotate2DVector(vector, angle) {
-  const x = vector[0];
-  const y = vector[1];
-  const cos = Math.cos(angle);
-  const sin = Math.sin(angle);
-  const rotatedX = x * cos - y * sin;
-  const rotatedY = x * sin + y * cos;
-  return [rotatedX, rotatedY];
-}
-
-function blueNoise(width, height, gridSpacing, innerCellSize, center, prng) { 
-  const positions = new Array(width * height);
-  const offset = [center[0] - (width - 1) * gridSpacing / 2, center[1] - (height - 1) * gridSpacing / 2];
   
-  for (let i = 0; i < width; i++) {
-    for (let j = 0; j < height; j++) {
-      let position = [i * gridSpacing + offset[0], j * gridSpacing + offset[1]];
-      position[0] += (prng() * 2 - 1) * innerCellSize / 2;
-      position[1] += (prng() * 2 - 1) * innerCellSize / 2;
-
-      positions[i * width + j] = position;
-    }
+  function rotate2DVector(vector, angle) {
+    const x = vector[0];
+    const y = vector[1];
+    const cos = Math.cos(angle);
+    const sin = Math.sin(angle);
+    const rotatedX = x * cos - y * sin;
+    const rotatedY = x * sin + y * cos;
+    return [rotatedX, rotatedY];
   }
-
-  return positions;
-}
-
-function blueNoiseCenters(width, height, gridSpacing, center) {
-  const centers = new Array(width * height);
-  const offset = [center[0] - (width - 1) * gridSpacing / 2, center[1] - (height - 1) * gridSpacing / 2];
   
-  for (let i = 0; i < width; i++) {
-    for (let j = 0; j < height; j++) {
-      let position = [i * gridSpacing + offset[0], j * gridSpacing + offset[1]];
-      centers[i * width + j] = position;
+  function blueNoise(width, height, gridSpacing, innerCellSize, center, prng) { 
+    const positions = new Set();
+    const offset = [center[0] - (width - 1) * gridSpacing / 2, center[1] - (height - 1) * gridSpacing / 2];
+    
+    for (let i = 0; i < width; i++) {
+      for (let j = 0; j < height; j++) {
+        let position = [i * gridSpacing + offset[0], j * gridSpacing + offset[1]];
+        const center = [position[0], position[1]];
+        
+        position[0] += (prng() * 2 - 1) * innerCellSize / 2;
+        position[1] += (prng() * 2 - 1) * innerCellSize / 2;
+        
+        positions.add([position, center]);
+      }
     }
+    
+    return positions;
+  }
+  
+  function generateProceduralScene(seed, params) {
+    const scene = {};
+    
+    const masterPrng = new Math.seedrandom(seed);
+    
+    // Different PRNGs are used so the parameters won't have a chaotic effect on the scene
+    const majorBlueNoisePrng = new Math.seedrandom(masterPrng());
+    const minorBlueNoisePrng = new Math.seedrandom(masterPrng());
+    const blueNoiseSubdividePrng = new Math.seedrandom(masterPrng());
+    const objectSelectionPrng = new Math.seedrandom(masterPrng());
+    
+    const majorObjectsInnerCellSize = params.objectSpacing - params.objectPadding * 2;
+    
+    scene.majorObjects = blueNoise(params.deskWidth / params.objectSpacing, params.deskDepth / params.objectSpacing, params.objectSpacing, majorObjectsInnerCellSize, [0, 0], majorBlueNoisePrng);
+    scene.minorObjects = new Set();
+
+    for (const majorObject of scene.majorObjects) {
+      if (blueNoiseSubdividePrng() > params.majorObjectIncidence) {
+        scene.majorObjects.delete(majorObject);
+
+        scene.minorObjects.add(blueNoise(params.blueNoiseSubdivisions, params.blueNoiseSubdivisions, params.objectSpacing / params.blueNoiseSubdivisions, majorObjectsInnerCellSize / params.blueNoiseSubdivisions, majorObject[1], minorBlueNoisePrng));
+      }
+    }
+
+    scene.objectSelectionPrng = objectSelectionPrng;
+
+    return scene;
   }
 
-  return centers;
 }
 
 main();
