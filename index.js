@@ -482,8 +482,11 @@ async function main() {
         
         const scene = generateProceduralScene(seed, params);
 
-        const pendingLamps = new Set();
-        const objectsNeedingLight = new Set();
+        // TODO: Move most of this to the generateProceduralScene function to avoid running the costly generation
+        // algorithms every frame.
+
+        const pendingLamps = [];
+        const objectsNeedingLight = [];
         const biomeGenerator = createNoise2D(scene.biomePrng);
 
         for (const majorObject of scene.majorObjects) {
@@ -496,14 +499,14 @@ async function main() {
           const rotation = (scene.objectSelectionPrng() * 2 - 1) * chosenObject.rotationRange / 2;
           
           if (chosenObject.type == "lamp") {
-            pendingLamps.add(majorObject[0]);
+            pendingLamps.push(majorObject[0]);
           } else {
             if (renderMajorObjects) {
               renderObject(gl, meshProgramInfo, chosenObject.object, [majorObject[0][0], params.deskHeight, majorObject[0][1]], [0, rotation, 0]);
             }
             
             if (chosenObject.needsLight) {
-              objectsNeedingLight.add(majorObject[0]);
+              objectsNeedingLight.push(majorObject[0]);
             }
           }
 
@@ -532,14 +535,14 @@ async function main() {
 
 
               if (chosenObject.type == "lamp") {
-                pendingLamps.add(minorObject[0]);
+                pendingLamps.push(minorObject[0]);
               } else {
                 if (renderMinorObjects) {
                   renderObject(gl, meshProgramInfo, chosenObject.object, [minorObject[0][0], params.deskHeight, minorObject[0][1]], [0, rotation, 0]);
                 }
                 
                 if (chosenObject.needsLight) {
-                  objectsNeedingLight.add(minorObject[0]);
+                  objectsNeedingLight.push(minorObject[0]);
                 }
               }
             
@@ -557,30 +560,40 @@ async function main() {
         }
 
         if (renderMinorObjects) {
+          // Create a cost matrix for the Hungarian algorithm
+          const costMatrix = [];
           for (const pendingLamp of pendingLamps) {
-            let bestCandidate;
-            let shortestDistance = Infinity;
-            
-            // TODO: replace this flawed assignment with Hungarian algorithm (munkres-js)
+            const row = [];
             for (const objectNeedingLight of objectsNeedingLight) {
               const distance = Math.sqrt(
-              Math.pow(pendingLamp[0] - objectNeedingLight[0], 2) +
-              Math.pow(pendingLamp[1] - objectNeedingLight[1], 2)
+                Math.pow(pendingLamp[0] - objectNeedingLight[0], 2) +
+                Math.pow(pendingLamp[1] - objectNeedingLight[1], 2)
               );
+              row.push(distance);
+            }
+            costMatrix.push(row);
+          }
 
-              if (distance < shortestDistance) {
-                shortestDistance = distance;
-                bestCandidate = objectNeedingLight;
-              }
+          // Apply the Hungarian algorithm to find the best combination
+          const munkers = new Munkres();
+          const assignments = munkers.compute(costMatrix);
+
+          // Render the lamps looking at the assigned objects
+          for (const assignment of assignments) {
+            const pendingLamp = pendingLamps[assignment[0]];
+            const objectNeedingLight = objectsNeedingLight[assignment[1]];
+            renderLampLookingAt([pendingLamp[0], params.deskHeight, pendingLamp[1]], [objectNeedingLight[0], params.deskHeight, objectNeedingLight[1]], useLampDebugHead);
+            pendingLamps[assignment[0]] = null;
+            
+          }
+
+          // Render the remaining lamps pointing to random points on the desk
+          for (const pendingLamp of pendingLamps) {
+            if (pendingLamp === null) {
+              continue;
             }
-          
-            // If there are no objects needing light left, the lamp will point to a random point on the desk
-            if (bestCandidate === undefined) {
-              renderLampLookingAt([pendingLamp[0], params.deskHeight, pendingLamp[1]], [(scene.miscPrng() * 2 - 1) * params.deskWidth / 2, params.deskHeight, (scene.objectSelectionPrng() * 2 - 1) * params.deskDepth / 2], useLampDebugHead);
-            } else {
-              renderLampLookingAt([pendingLamp[0], params.deskHeight, pendingLamp[1]], [bestCandidate[0], params.deskHeight, bestCandidate[1]], useLampDebugHead);
-              objectsNeedingLight.delete(bestCandidate);
-            }
+            
+            renderLampLookingAt([pendingLamp[0], params.deskHeight, pendingLamp[1]], [(scene.objectSelectionPrng() * 2 - 1) * params.deskWidth / 2, params.deskHeight, (scene.objectSelectionPrng() * 2 - 1) * params.deskDepth / 2], false);
           }
         }
         
@@ -705,7 +718,6 @@ async function main() {
     const blueNoiseSubdividePrng = new Math.seedrandom(masterPrng());
     const objectSelectionPrng = new Math.seedrandom(masterPrng());
     const biomePrng = new Math.seedrandom(masterPrng());
-    const miscPrng = new Math.seedrandom(masterPrng());
     
     const majorObjectsInnerCellSize = params.objectSpacing - params.objectPadding * 2;
     
@@ -722,7 +734,6 @@ async function main() {
 
     scene.objectSelectionPrng = objectSelectionPrng;
     scene.biomePrng = biomePrng;
-    scene.miscPrng = miscPrng;
 
     return scene;
   }
