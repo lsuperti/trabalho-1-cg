@@ -219,6 +219,29 @@ async function main() {
   let overrideLookAt = false;
   let lookAt = [0, 0, 0];
 
+  const defaultParams = {
+    deskWidth: 2.5,
+    deskHeight: 1,
+    deskDepth: 1.5,
+    
+    objectSpacing: 0.5,
+    objectPadding: 0.1,
+
+    majorObjectIncidence: 0.25,
+    minorObjectGridSubdivisionCuts: 2,
+
+    biomeMapScale: 2.5,
+
+    renderBlueNoiseBounds: true,
+    renderBlueNoisePlaceholders: false,
+    renderBiomeMap: true,
+    renderMajorObjects: true,
+    renderMinorObjects: true,
+  };
+
+  let scene;
+  let params = defaultParams;
+
   let seed = Math.random();
   console.log("Seed: " + seed);  
   const demo = "final"; // "objects", "lamp", "blueNoise", "debugObjects", "desk", "biomes", "singleObject", "final"
@@ -269,6 +292,7 @@ async function main() {
       overrideLookAt = true;
       lookAt = [0, 1, 0];
       cameraPositionOffset = [0, 2.5, 2];
+      scene = generateProceduralScene(seed, params);
       break;
   }
 
@@ -389,155 +413,46 @@ async function main() {
         renderObject(gl, meshProgramInfo, debugPlane);
       case "final":
       default:
-        const defaultParams = {
-          deskWidth: 2.5,
-          deskHeight: 1,
-          deskDepth: 1.5,
-          
-          objectSpacing: 0.5,
-          objectPadding: 0.1,
-
-          majorObjectIncidence: 0.25,
-          blueNoiseSubdivisions: 2,
-        }
-
-        const params = defaultParams;
-
+        const renderDebugObjects = true;
         const renderWorldAxis = false;
-        const renderBlueNoiseBounds = true;
-        const renderBlueNoisePlaceholders = false;
-        const renderBiomeMap = true;
-        const renderMajorObjects = true;
-        const renderMinorObjects = true;
         const useLampDebugHead = true;
+        
         const renderDeskLegs = true;
         const renderDeskTop = true;
 
-        
-        if (renderWorldAxis) {
+        if (renderDebugObjects && renderWorldAxis) {
           renderObject(gl, meshProgramInfo, debugGlobalAxis);
         }
-        
+
+        // Desk        
         renderDesk(params.deskWidth, params.deskHeight, params.deskDepth, [0, 0, 0], renderDeskLegs, renderDeskTop);
+        // Floor (placeholder)
         renderObject(gl, meshProgramInfo, debugPlane);
         
-        const scene = generateProceduralScene(seed, params);
-
-        // TODO: Move most of this to the generateProceduralScene function to avoid running the costly generation
-        // algorithms every frame.
-
-        const pendingLamps = [];
-        const objectsNeedingLight = [];
-        const biomeGenerator = createNoise2D(scene.biomePrng);
-
-        for (const majorObject of scene.majorObjects) {
-          const biome = generateBiome(majorObject[0][0], majorObject[0][1], 4, biomeGenerator, 2.5);
-          if (renderBiomeMap) {
-            renderObject(gl, meshProgramInfo, debugBiomeSquares[biome], [majorObject[1][0], params.deskHeight, majorObject[1][1]], [0, 0, 0], [params.objectSpacing, params.objectSpacing, params.objectSpacing]);
-          }
-          
-          const chosenObject = majorBiomeObjects[biome][Math.floor(scene.objectSelectionPrng() * majorBiomeObjects[biome].length)];
-          const rotation = (scene.objectSelectionPrng() * 2 - 1) * chosenObject.rotationRange / 2;
-          
-          if (chosenObject.type == "lamp") {
-            pendingLamps.push(majorObject[0]);
-          } else {
-            if (renderMajorObjects) {
-              renderObject(gl, meshProgramInfo, chosenObject.object, [majorObject[0][0], params.deskHeight, majorObject[0][1]], [0, rotation, 0]);
-            }
-            
-            if (chosenObject.needsLight) {
-              objectsNeedingLight.push(majorObject[0]);
-            }
-          }
-
-
-          // Debug
-          if (renderBlueNoisePlaceholders) {
-            renderObject(gl, meshProgramInfo, debugAxis, [majorObject[0][0], params.deskHeight, majorObject[0][1]], [0, 0, 0], [2, 2, 2]);
-          }
-          
-          if (renderBlueNoiseBounds) {
-            renderObject(gl, meshProgramInfo, blueNoiseOuterGridCell, [majorObject[1][0], params.deskHeight, majorObject[1][1]], [0, 0, 0], [params.objectSpacing, params.objectSpacing, params.objectSpacing]);
-            renderObject(gl, meshProgramInfo, blueNoiseInnerGridCell, [majorObject[1][0], params.deskHeight, majorObject[1][1]], [0, 0, 0], [params.objectSpacing - params.objectPadding * 2, params.objectSpacing - params.objectPadding * 2, params.objectSpacing - params.objectPadding * 2]);
+        // Debug objects
+        if (renderDebugObjects) {
+          for (const object of scene.debugObjects) {
+            renderObject(gl, meshProgramInfo, object.object, object.position, object.rotation, object.scale);
           }
         }
 
-        for (const minorObjects of scene.minorObjects) {
-          for (const minorObject of minorObjects) {
-            const biome = generateBiome(minorObject[0][0], minorObject[0][1], 4, biomeGenerator, 2.5);
-            // Debug biome markers
-            if (renderBiomeMap) {
-              renderObject(gl, meshProgramInfo, debugBiomeSquares[biome], [minorObject[1][0], params.deskHeight, minorObject[1][1]], [0, 0, 0], [params.objectSpacing / params.blueNoiseSubdivisions, params.objectSpacing / params.blueNoiseSubdivisions, params.objectSpacing / params.blueNoiseSubdivisions]);
-            }
-            
-            const chosenObject = minorBiomeObjects[biome][Math.floor(scene.objectSelectionPrng() * minorBiomeObjects[biome].length)];
-            const rotation = (scene.objectSelectionPrng() * 2 - 1) * chosenObject.rotationRange / 2;
-
-
-              if (chosenObject.type == "lamp") {
-                pendingLamps.push(minorObject[0]);
-              } else {
-                if (renderMinorObjects) {
-                  renderObject(gl, meshProgramInfo, chosenObject.object, [minorObject[0][0], params.deskHeight, minorObject[0][1]], [0, rotation, 0]);
-                }
-                
-                if (chosenObject.needsLight) {
-                  objectsNeedingLight.push(minorObject[0]);
-                }
-              }
-            
-            
-            // Debug
-            if (renderBlueNoisePlaceholders) {
-              renderObject(gl, meshProgramInfo, debugAxis, [minorObject[0][0], params.deskHeight, minorObject[0][1]]);
-            }
-            
-            if (renderBlueNoiseBounds) {
-              renderObject(gl, meshProgramInfo, blueNoiseOuterGridCell, [minorObject[1][0], params.deskHeight, minorObject[1][1]], [0, 0, 0], [params.objectSpacing / 2, params.objectSpacing / 2, params.objectSpacing / 2], [0.5, 0.5, 0.5]);
-              renderObject(gl, meshProgramInfo, blueNoiseInnerGridCell, [minorObject[1][0], params.deskHeight, minorObject[1][1]], [0, 0, 0], [params.objectSpacing / 2 - params.objectPadding, params.objectSpacing / 2 - params.objectPadding, params.objectSpacing / 2 - params.objectPadding], [0.5, 0.5, 0.5]);
-            }
+        // Major objects
+        if (params.renderMajorObjects) {
+          for (const object of scene.majorObjects) {
+            renderObject(gl, meshProgramInfo, object.object, object.position, object.rotation, object.scale);
           }
         }
-
-        if (renderMinorObjects) {
-          // Create a cost matrix for the Hungarian algorithm
-          const costMatrix = [];
-          for (const pendingLamp of pendingLamps) {
-            const row = [];
-            for (const objectNeedingLight of objectsNeedingLight) {
-              const distance = Math.sqrt(
-                Math.pow(pendingLamp[0] - objectNeedingLight[0], 2) +
-                Math.pow(pendingLamp[1] - objectNeedingLight[1], 2)
-              );
-              row.push(distance);
-            }
-            costMatrix.push(row);
+        
+        // Minor objects
+        if (params.renderMinorObjects) {
+          // Generic objects
+          for (const object of scene.minorObjects) {
+            renderObject(gl, meshProgramInfo, object.object, object.position, object.rotation, object.scale);
           }
-
-          // Apply the Hungarian algorithm to find the best combination
-          const munkers = new Munkres();
-          const assignments = munkers.compute(costMatrix);
-
-          // Render the lamps looking at the assigned objects
-          for (const assignment of assignments) {
-            const pendingLamp = pendingLamps[assignment[0]];
-            const objectNeedingLight = objectsNeedingLight[assignment[1]];
-            
-            // Only make the lamp look at the object if it's within 75 centimeters
-            if (Math.sqrt(Math.pow(pendingLamp[0] - objectNeedingLight[0], 2) + Math.pow(pendingLamp[1] - objectNeedingLight[1], 2)) < 0.75) {
-              renderLampLookingAt([pendingLamp[0], params.deskHeight, pendingLamp[1]], [objectNeedingLight[0], params.deskHeight, objectNeedingLight[1]], useLampDebugHead);
-              pendingLamps[assignment[0]] = null;
-            }
-          }
-
-          // Render the remaining lamps pointing to random points on the desk
-          for (const pendingLamp of pendingLamps) {
-            if (pendingLamp === null) {
-              continue;
-            }
-            
-            renderLampLookingAt([pendingLamp[0], params.deskHeight, pendingLamp[1]], [(scene.objectSelectionPrng() * 2 - 1) * params.deskWidth / 2, params.deskHeight, (scene.objectSelectionPrng() * 2 - 1) * params.deskDepth / 2], false);
+        
+          // Lamps
+          for (const lamp of scene.lamps) {
+            renderLampLookingAt(lamp.position, lamp.lookAt, renderDebugObjects && useLampDebugHead && lamp.lookingAtObject);
           }
         }
         
@@ -665,21 +580,154 @@ async function main() {
     
     const majorObjectsInnerCellSize = params.objectSpacing - params.objectPadding * 2;
     
-    scene.majorObjects = blueNoise(params.deskWidth / params.objectSpacing, params.deskDepth / params.objectSpacing, params.objectSpacing, majorObjectsInnerCellSize, [0, 0], majorBlueNoisePrng);
-    scene.minorObjects = new Set();
+    const majorObjectPositions = blueNoise(params.deskWidth / params.objectSpacing, params.deskDepth / params.objectSpacing, params.objectSpacing, majorObjectsInnerCellSize, [0, 0], majorBlueNoisePrng);
+    let minorObjectPositions = new Set();
 
-    for (const majorObject of scene.majorObjects) {
+    for (const majorObject of majorObjectPositions) {
       if (blueNoiseSubdividePrng() > params.majorObjectIncidence) {
-        scene.majorObjects.delete(majorObject);
+        majorObjectPositions.delete(majorObject);
 
-        scene.minorObjects.add(blueNoise(params.blueNoiseSubdivisions, params.blueNoiseSubdivisions, params.objectSpacing / params.blueNoiseSubdivisions, majorObjectsInnerCellSize / params.blueNoiseSubdivisions, majorObject[1], minorBlueNoisePrng));
+        minorObjectPositions = new Set([...minorObjectPositions, ...blueNoise(params.minorObjectGridSubdivisionCuts, params.minorObjectGridSubdivisionCuts, params.objectSpacing / params.minorObjectGridSubdivisionCuts, majorObjectsInnerCellSize / params.minorObjectGridSubdivisionCuts, majorObject[1], minorBlueNoisePrng)]);
       }
     }
 
-    scene.objectSelectionPrng = objectSelectionPrng;
-    scene.biomePrng = biomePrng;
+    scene.majorObjects = new Set();
+    scene.minorObjects = new Set();
+    scene.debugObjects = new Set();
+    scene.lamps = new Set();
+
+    const pendingLamps = [];
+    const objectsNeedingLight = [];
+    const biomeGenerator = createNoise2D(biomePrng);
+
+    for (const majorObject of majorObjectPositions) {
+      const biome = generateBiome(majorObject[0][0], majorObject[0][1], 4, biomeGenerator, params.biomeMapScale);
+      if (params.renderBiomeMap) {
+        addObjectToScene(debugBiomeSquares[biome], "debug", [majorObject[1][0], params.deskHeight, majorObject[1][1]], [0, 0, 0], [params.objectSpacing, params.objectSpacing, params.objectSpacing]);
+      }
+      
+      const chosenObject = majorBiomeObjects[biome][Math.floor(objectSelectionPrng() * majorBiomeObjects[biome].length)];
+      const rotation = (objectSelectionPrng() * 2 - 1) * chosenObject.rotationRange / 2;
+      
+      if (chosenObject.type == "lamp") {
+        pendingLamps.push(majorObject[0]);
+      } else {
+        if (params.renderMajorObjects) {
+          addObjectToScene(chosenObject.object, "major", [majorObject[0][0], params.deskHeight, majorObject[0][1]], [0, rotation, 0]);
+        }
+        
+        if (chosenObject.needsLight) {
+          objectsNeedingLight.push(majorObject[0]);
+        }
+      }
+
+
+      // Debug
+      if (params.renderBlueNoisePlaceholders) {
+        addObjectToScene(debugAxis, "debug", [majorObject[0][0], params.deskHeight, majorObject[0][1]], [0, 0, 0], [2, 2, 2]);
+      }
+      
+      if (params.renderBlueNoiseBounds) {
+        addObjectToScene(blueNoiseOuterGridCell, "debug", [majorObject[1][0], params.deskHeight, majorObject[1][1]], [0, 0, 0], [params.objectSpacing, params.objectSpacing, params.objectSpacing]);
+        addObjectToScene(blueNoiseInnerGridCell, "debug", [majorObject[1][0], params.deskHeight, majorObject[1][1]], [0, 0, 0], [params.objectSpacing - params.objectPadding * 2, params.objectSpacing - params.objectPadding * 2, params.objectSpacing - params.objectPadding * 2]);
+      }
+    }
+
+    // Minor objects
+    for (const minorObject of minorObjectPositions) {
+      const biome = generateBiome(minorObject[0][0], minorObject[0][1], 4, biomeGenerator, params.biomeMapScale);
+      // Debug biome map
+      if (params.renderBiomeMap) {
+        addObjectToScene(debugBiomeSquares[biome], "debug", [minorObject[1][0], params.deskHeight, minorObject[1][1]], [0, 0, 0], [params.objectSpacing / params.minorObjectGridSubdivisionCuts, params.objectSpacing / params.minorObjectGridSubdivisionCuts, params.objectSpacing / params.minorObjectGridSubdivisionCuts]);
+      }
+      
+      const chosenObject = minorBiomeObjects[biome][Math.floor(objectSelectionPrng() * minorBiomeObjects[biome].length)];
+      const rotation = (objectSelectionPrng() * 2 - 1) * chosenObject.rotationRange / 2;
+
+      if (chosenObject.type == "lamp") {
+        pendingLamps.push(minorObject[0]);
+      } else {
+        if (params.renderMinorObjects) {
+          addObjectToScene(chosenObject.object, "minor", [minorObject[0][0], params.deskHeight, minorObject[0][1]], [0, rotation, 0]);
+        }
+        
+        if (chosenObject.needsLight) {
+          objectsNeedingLight.push(minorObject[0]);
+        }
+      }
+        
+        
+      // Debug
+      if (params.renderBlueNoisePlaceholders) {
+        addObjectToScene(debugAxis, "debug", [minorObject[0][0], params.deskHeight, minorObject[0][1]]);
+      }
+      
+      if (params.renderBlueNoiseBounds) {
+        addObjectToScene(blueNoiseOuterGridCell, "debug", [minorObject[1][0], params.deskHeight, minorObject[1][1]], [0, 0, 0], [params.objectSpacing / 2, params.objectSpacing / 2, params.objectSpacing / 2], [0.5, 0.5, 0.5]);
+        addObjectToScene(blueNoiseInnerGridCell, "debug", [minorObject[1][0], params.deskHeight, minorObject[1][1]], [0, 0, 0], [params.objectSpacing / 2 - params.objectPadding, params.objectSpacing / 2 - params.objectPadding, params.objectSpacing / 2 - params.objectPadding], [0.5, 0.5, 0.5]);
+      }
+    }
+
+    // Create a cost matrix for the Hungarian algorithm
+    const costMatrix = [];
+    for (const pendingLamp of pendingLamps) {
+      const row = [];
+      for (const objectNeedingLight of objectsNeedingLight) {
+        const distance = Math.sqrt(
+          Math.pow(pendingLamp[0] - objectNeedingLight[0], 2) +
+          Math.pow(pendingLamp[1] - objectNeedingLight[1], 2)
+        );
+        row.push(distance);
+      }
+      costMatrix.push(row);
+    }
+
+    // Apply the Hungarian algorithm to find the best combination
+    const munkers = new Munkres();
+    const assignments = munkers.compute(costMatrix);
+
+    // Render the lamps looking at the assigned objects
+    for (const assignment of assignments) {
+      const pendingLamp = pendingLamps[assignment[0]];
+      const objectNeedingLight = objectsNeedingLight[assignment[1]];
+      
+      // Only make the lamp look at the object if it's within 75 centimeters
+      if (Math.sqrt(Math.pow(pendingLamp[0] - objectNeedingLight[0], 2) + Math.pow(pendingLamp[1] - objectNeedingLight[1], 2)) < 0.75) {
+        if (params.renderMinorObjects) {
+          addLampToScene([pendingLamp[0], params.deskHeight, pendingLamp[1]], [objectNeedingLight[0], params.deskHeight, objectNeedingLight[1]], true);
+        }
+        pendingLamps[assignment[0]] = null;
+      }
+    }
+
+    // Render the remaining lamps pointing to random points on the desk
+    for (const pendingLamp of pendingLamps) {
+      if (pendingLamp === null) {
+        continue;
+      }
+      
+      addLampToScene([pendingLamp[0], params.deskHeight, pendingLamp[1]], [(objectSelectionPrng() * 2 - 1) * params.deskWidth / 2, params.deskHeight, (objectSelectionPrng() * 2 - 1) * params.deskDepth / 2], false);
+    }
 
     return scene;
+
+    function addObjectToScene(object, type, position = [0, 0, 0], rotation = [0, 0, 0], scale = [1, 1, 1]) {
+      const sceneObject = { object, position, rotation, scale };
+      
+      if (type == "major") {
+        scene.majorObjects.add(sceneObject);
+      } else if (type == "minor"){
+        scene.minorObjects.add(sceneObject);
+      } else {
+        scene.debugObjects.add(sceneObject);
+      }
+    }
+
+    function addLampToScene(position, lookAt, lookingAtObject) {
+      const sceneLamp = { position, lookAt, lookingAtObject };
+      
+      scene.lamps.add(sceneLamp);
+    }
   }
 
 }
