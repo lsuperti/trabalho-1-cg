@@ -420,26 +420,28 @@ async function main() {
         const renderDeskLegs = true;
         const renderDeskTop = true;
 
+        const center = [0, 0, 0];
+
         if (renderDebugObjects && renderWorldAxis) {
           renderObject(gl, meshProgramInfo, debugGlobalAxis);
         }
 
         // Desk        
-        renderDesk(params.deskWidth, params.deskHeight, params.deskDepth, [0, 0, 0], renderDeskLegs, renderDeskTop);
+        renderDesk(params.deskWidth, params.deskHeight, params.deskDepth, center, renderDeskLegs, renderDeskTop);
         // Floor (placeholder)
         renderObject(gl, meshProgramInfo, debugPlane);
         
         // Debug objects
         if (renderDebugObjects) {
           for (const object of scene.debugObjects) {
-            renderObject(gl, meshProgramInfo, object.object, object.position, object.rotation, object.scale);
+            renderObject(gl, meshProgramInfo, object.object, twgl.v3.add(object.position, center), object.rotation, object.scale);
           }
         }
 
         // Major objects
         if (params.renderMajorObjects) {
           for (const object of scene.majorObjects) {
-            renderObject(gl, meshProgramInfo, object.object, object.position, object.rotation, object.scale);
+            renderObject(gl, meshProgramInfo, object.object, twgl.v3.add(object.position, center), object.rotation, object.scale);
           }
         }
         
@@ -447,12 +449,12 @@ async function main() {
         if (params.renderMinorObjects) {
           // Generic objects
           for (const object of scene.minorObjects) {
-            renderObject(gl, meshProgramInfo, object.object, object.position, object.rotation, object.scale);
+            renderObject(gl, meshProgramInfo, object.object, twgl.v3.add(object.position, center), object.rotation, object.scale);
           }
         
           // Lamps
           for (const lamp of scene.lamps) {
-            renderLampLookingAt(lamp.position, lamp.lookAt, renderDebugObjects && useLampDebugHead && lamp.lookingAtObject);
+            renderLampLookingAt(twgl.v3.add(lamp.position, center), twgl.v3.add(lamp.lookAt, center), renderDebugObjects && useLampDebugHead && lamp.lookingAtObject);
           }
         }
         
