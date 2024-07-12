@@ -1,0 +1,23 @@
+# Blender 4.0.2 MTL File: 'Sketchfab_2023_11_11_14_28_40.blend'
+# www.blender.org
+
+newmtl Antique_Square_Mantel_Clock_Type_B_Extra_Worn
+Ka 1.000000 1.000000 1.000000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni 1.450000
+d 1.000000
+illum 2
+map_Kd small_Albedo.png
+map_Ns small_Roughness.png
+map_Bump small_Normal.png
+
+newmtl Antique_Square_Mantel_Clock_Type_B_Standard_Glass
+Ns 250.000000
+Ka 1.000000 1.000000 1.000000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni 1.450000
+d 0.393939
+illum 9
+map_Bump small_Normal.png

@@ -109,17 +109,12 @@ async function main() {
     return deg * Math.PI / 180;
   }
 
-  const up = [0, 1, 0];
-  const down = [0, -1, 0];
-  const left = [-1, 0, 0];
-  const right = [1, 0, 0];
-  const forward = [0, 0, -1];
-  const backward = [0, 0, 1];
-
+  // "objects" demo objects
   const windmill = await parseAndLoadOBJ("./assets/windmill/windmill.obj", gl, meshProgramInfo);
   const chair = await parseAndLoadOBJ("./assets/chair/chair.obj", gl, meshProgramInfo);
   const demoDesk = await parseAndLoadOBJ("./assets/demoDesk/desk.obj", gl, meshProgramInfo);
   
+  // Debug objects
   const debugPlane = await parseAndLoadOBJ("./assets/debug/plane/debugPlane.obj", gl, meshProgramInfo);
   const debugAxis = await parseAndLoadOBJ("./assets/debug/axis/debugAxisV2.obj", gl, meshProgramInfo);
   const debugGlobalAxis = await parseAndLoadOBJ("./assets/debug/axis/debugGlobalAxis.obj", gl, meshProgramInfo);
@@ -136,14 +131,19 @@ async function main() {
   const debugBlueSquare = await parseAndLoadOBJ("./assets/debug/areaSquare/blue.obj", gl, meshProgramInfo);
   const debugYellowSquare = await parseAndLoadOBJ("./assets/debug/areaSquare/yellow.obj", gl, meshProgramInfo);
   
+  // Lamp objects
   const lampBody = await parseAndLoadOBJ("./assets/lamp/body.obj", gl, meshProgramInfo);
   const lampHead = await parseAndLoadOBJ("./assets/lamp/head.obj", gl, meshProgramInfo);
   const debugLampHead = await parseAndLoadOBJ("./assets/lamp/debugHead.obj", gl, meshProgramInfo);
-  const lampHeadOffset = [0.053379, 0.375211, 0.000011];
+  const antiqueLampBody = await parseAndLoadOBJ("./assets/antiqueLamp/body.obj", gl, meshProgramInfo);
+  const antiqueLampHead = await parseAndLoadOBJ("./assets/antiqueLamp/head.obj", gl, meshProgramInfo);
+  const antiqueLampDebugHead = await parseAndLoadOBJ("./assets/antiqueLamp/debugHead.obj", gl, meshProgramInfo);
 
+  // Desk objects
   const deskBar = await parseAndLoadOBJ("./assets/desk/bar.obj", gl, meshProgramInfo);
   const deskTopTile = await parseAndLoadOBJ("./assets/desk/topTile.obj", gl, meshProgramInfo);
 
+  // Office biome objects
   const keys = await parseAndLoadOBJ("./assets/keys/keys.obj", gl, meshProgramInfo);
   const waterBottle = await parseAndLoadOBJ("./assets/waterBottle/waterBottle.obj", gl, meshProgramInfo);
   const notepad = await parseAndLoadOBJ("./assets/notepad/notepad.obj", gl, meshProgramInfo);
@@ -151,19 +151,41 @@ async function main() {
   const coffeeMugEspresso = await parseAndLoadOBJ("./assets/coffeeMug/espresso/espresso.obj", gl, meshProgramInfo);
   const memoBlock = await parseAndLoadOBJ("./assets/memoBlock/memoBlock.obj", gl, meshProgramInfo);
   const pencilHolder = await parseAndLoadOBJ("./assets/pencilHolder/pencilHolder.obj", gl, meshProgramInfo);
+  const glasses = await parseAndLoadOBJ("./assets/glasses/glasses.obj", gl, meshProgramInfo);
+  const clipboard = await parseAndLoadOBJ("./assets/clipboard/clipboard.obj", gl, meshProgramInfo);
+
+  // Antique biome objects
+  const antiqueBookLarge = await parseAndLoadOBJ("./assets/antiqueBook/large.obj", gl, meshProgramInfo);
+  const antiqueBookSmall = await parseAndLoadOBJ("./assets/antiqueBook/small.obj", gl, meshProgramInfo);
+  const candleHolder = await parseAndLoadOBJ("./assets/candleHolder/candleHolder.obj", gl, meshProgramInfo);
+  const goblet = await parseAndLoadOBJ("./assets/goblet/goblet.obj", gl, meshProgramInfo);
+  const antiqueGlobe = await parseAndLoadOBJ("./assets/antiqueGlobe/antiqueGlobe.obj", gl, meshProgramInfo);
+  const antiqueClockLarge = await parseAndLoadOBJ("./assets/antiqueClock/large.obj", gl, meshProgramInfo);
+  const antiqueClockSmall = await parseAndLoadOBJ("./assets/antiqueClock/small.obj", gl, meshProgramInfo);
+  const telephone = await parseAndLoadOBJ("./assets/telephone/telephone.obj", gl, meshProgramInfo);
   
+
   const minorOffice = [
     { object: keys, needsLight: false, type: "generic", rotationRange: Math.PI * 2},
     { object: waterBottle, needsLight: false, type: "generic", rotationRange: Math.PI * 2 },
     { object: coffeeMugLarge, needsLight: false, type: "generic", rotationRange: Math.PI * 2 },
     { object: coffeeMugEspresso, needsLight: false, type: "generic", rotationRange: Math.PI * 2},
-    { object: memoBlock, needsLight: false, type: "generic", rotationRange: Math.PI * 2 },
+    { object: memoBlock, needsLight: false, type: "generic", rotationRange: Math.PI * 2 / 10 },
     { object: pencilHolder, needsLight: false, type: "generic", rotationRange: Math.PI * 2 },
+    { object: glasses, needsLight: false, type: "generic", rotationRange: Math.PI * 2 },
   ];
   
-  // TODO: Add objects specific to each biome
   const minorGadgets = minorOffice;
-  const minorAntiques = minorOffice;
+  
+  const minorAntiques = [
+    { object: antiqueBookSmall, needsLight: false, type: "generic", rotationRange: Math.PI / 10 },
+    { object: candleHolder, needsLight: false, type: "generic", rotationRange: Math.PI * 2 },
+    { object: goblet, needsLight: false, type: "generic", rotationRange: Math.PI * 2 },
+    { object: antiqueGlobe, needsLight: false, type: "generic", rotationRange: Math.PI * 2 },
+    { object: antiqueClockSmall, needsLight: false, type: "generic", rotationRange: Math.PI / 10 },
+    { object: telephone, needsLight: false, type: "generic", rotationRange: Math.PI / 10 },
+  ]
+  
   const minorDecorations = minorOffice;
   
   const minorGenericObjects = [{ needsLight: false, type: "lamp" }];
@@ -177,10 +199,16 @@ async function main() {
 
   const majorOffice = [
     { object: notepad, needsLight: true, type: "generic", rotationRange: Math.PI / 10 },
+    { object: clipboard, needsLight: true, type: "generic", rotationRange: Math.PI / 10 },
   ]
 
   const majorGadgets = majorOffice;
-  const majorAntiques = majorOffice;
+
+  const majorAntiques = [
+    { object: antiqueBookLarge, needsLight: true, type: "generic", rotationRange: Math.PI / 10 },
+    { object: antiqueClockLarge, needsLight: false, type: "generic", rotationRange: Math.PI / 10 },
+  ]
+
   const majorDecorations = majorOffice;
 
   const majorGenericObjects = [];
@@ -283,8 +311,8 @@ async function main() {
       noiseDemoGenerator = createNoise2D(biomesDemoPrng);
       break;
     case "singleObject":
-      mainObject = pencilHolder;
-      cameraPositionOffset = [0, 0.1, 0.1];
+      mainObject = antiqueBookLarge;
+      cameraPositionOffset = [0, 0.5, -0.1];
       zFarMultiplier = 2;
       break;
     case "final":
@@ -298,7 +326,7 @@ async function main() {
 
   let then = 0;
 
-  function render(time) {
+  function render(time) {   
     time *= 0.001;  // convert to seconds
 
     const deltaTime = time - then;
@@ -352,8 +380,8 @@ async function main() {
         const lampLookAtRotatedRelative = rotate2DVector([0, 0.25 * (Math.sin(time) + 2)], time);
         const lampLookAt = [lampPosition[0] + lampLookAtRotatedRelative[0], lampPosition[1], lampPosition[2] + lampLookAtRotatedRelative[1]];
 
-        renderLampLookingAt(lampPosition, lampLookAt);
-        renderObject(gl, meshProgramInfo, debugAxis, lampLookAt, [0, 0, 0]);
+        renderLampLookingAt(lampPosition, lampLookAt, "antique", true);
+        renderObject(gl, meshProgramInfo, debugAxis, lampLookAt);
         renderObject(gl, meshProgramInfo, debugPlane, [0, 0, 0], [0, 0, 0], [0.25, 0.25, 0.25]);
         
         break;
@@ -411,6 +439,7 @@ async function main() {
       case "singleObject":
         renderObject(gl, meshProgramInfo, mainObject, [0, 0, 0], [0, time, 0]);
         renderObject(gl, meshProgramInfo, debugPlane);
+        break;
       case "final":
       default:
         const renderDebugObjects = true;
@@ -454,7 +483,7 @@ async function main() {
         
           // Lamps
           for (const lamp of scene.lamps) {
-            renderLampLookingAt(twgl.v3.add(lamp.position, center), twgl.v3.add(lamp.lookAt, center), renderDebugObjects && useLampDebugHead && lamp.lookingAtObject);
+            renderLampLookingAt(twgl.v3.add(lamp.position, center), twgl.v3.add(lamp.lookAt, center), lamp.type, renderDebugObjects && useLampDebugHead && lamp.lookingAtObject);
           }
         }
         
@@ -507,23 +536,34 @@ async function main() {
     }
   }
 
-  function renderLampLookingAt(lampPosition, lookAtPosition, debugHead = false) {
+  const defaultLampHeadOffset = [0.053379, 0.375211, 0.000011];
+  const antiqueLampHeadOffset = [0.053676, 0.276961, 0];
+
+  function renderLampLookingAt(lampPosition, lookAtPosition, type = "default", debugHead = false) {
+    const lampHeadOffset = type === "antique" ? antiqueLampHeadOffset : defaultLampHeadOffset;
+    const xOffset = type === "antique" ? 0 : 0.067045;
+    
     // The yaw does not consider the head offset
     let lampDirection = twgl.v3.subtract(lookAtPosition, lampPosition);
     const lampYaw = -Math.atan2(lampDirection[2], lampDirection[0]);
 
     // We rotate the relative head position in XZ plane based on the yaw. The X position has an additional offset so
     // that the vector considers the lightbulb as the center and not the point the head is attached to the body of the lamp.
-    const rotatedHeadOffsetXZ = rotate2DVector([lampHeadOffset[0] + 0.067045, lampHeadOffset[2]], -lampYaw);
+    const rotatedHeadOffsetXZ = rotate2DVector([lampHeadOffset[0] + xOffset, lampHeadOffset[2]], -lampYaw);
     const lampHeadPosition = twgl.v3.add(lampPosition, [rotatedHeadOffsetXZ[0], lampHeadOffset[1], rotatedHeadOffsetXZ[1]]);
     
     lampDirection = twgl.v3.subtract(lookAtPosition, lampHeadPosition);
     const lampHeadPitch = Math.atan2(lampDirection[1], Math.sqrt(lampDirection[0] * lampDirection[0] + lampDirection[2] * lampDirection[2]));
 
-    renderLamp(lampPosition, lampYaw, lampHeadPitch, debugHead);
+    renderLamp(lampPosition, lampYaw, lampHeadPitch, type, debugHead);
   }
 
-  function renderLamp(lampPosition, lampYaw, lampHeadPitch, debugHead = false) {
+  function renderLamp(lampPosition, lampYaw, lampHeadPitch, type = "default", useDebugHead = false) {
+    const lampHeadOffset = type === "antique" ? antiqueLampHeadOffset : defaultLampHeadOffset;
+    const body = type === "antique" ? antiqueLampBody : lampBody;
+    const head = type === "antique" ? antiqueLampHead : lampHead;
+    const debugHead = type === "antique" ? antiqueLampDebugHead : debugLampHead; 
+    
     const absoluteHeadPosition = twgl.v3.add(lampPosition, lampHeadOffset);
 
     // The head position is not centered in the lamp, so to rotate the lamp we must find the position the head will
@@ -535,8 +575,8 @@ async function main() {
 
     const rotatedHeadPosition = [lampXYPosition[0], absoluteHeadPosition[1], lampXYPosition[1]];
 
-    renderObject(gl, meshProgramInfo, lampBody, lampPosition, [0, lampYaw, 0]);
-    renderObject(gl, meshProgramInfo, debugHead ? debugLampHead : lampHead, rotatedHeadPosition, [0, lampYaw, lampHeadPitch + Math.PI/2]);
+    renderObject(gl, meshProgramInfo, body, lampPosition, [0, lampYaw, 0]);
+    renderObject(gl, meshProgramInfo, useDebugHead ? debugHead : head, rotatedHeadPosition, [0, lampYaw, lampHeadPitch + Math.PI/2]);
   }
   
   function rotate2DVector(vector, angle) {
@@ -726,12 +766,12 @@ async function main() {
     }
 
     function addLampToScene(position, lookAt, lookingAtObject) {
-      const sceneLamp = { position, lookAt, lookingAtObject };
+      const type = generateBiome(position[0], position[2], 4, biomeGenerator, params.biomeMapScale) == 2 ? "antique" : "default";
+      const sceneLamp = { position, lookAt, lookingAtObject, type };
       
       scene.lamps.add(sceneLamp);
     }
   }
-
 }
 
 main();

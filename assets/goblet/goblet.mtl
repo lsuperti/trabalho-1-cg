@@ -1,0 +1,13 @@
+# Blender 4.0.2 MTL File: 'Sketchfab_2022_04_30_16_12_59.blend'
+# www.blender.org
+
+newmtl Antique_Silver_Goblet_Type_A_Rough_Silver_Ornate
+Ka 1.000000 1.000000 1.000000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni 1.450000
+d 1.000000
+illum 2
+map_Kd goblet_Albedo.png
+map_Ns goblet_Roughness.png
+map_Bump goblet_Normal.png
