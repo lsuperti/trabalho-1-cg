@@ -1,0 +1,13 @@
+# Blender 4.0.2 MTL File: 'None'
+# www.blender.org
+
+newmtl Wood
+Ka 1.000000 1.000000 1.000000
+Ks 0.000000 0.000000 0.000000
+Ke 0.000000 0.000000 0.000000
+Ni 1.450000
+d 1.000000
+illum 1
+map_Kd Wood_albedo.jpg
+map_Ns Wood_roughness.jpg
+map_Bump Wood_normal.png

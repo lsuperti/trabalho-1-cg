@@ -154,6 +154,16 @@ async function main() {
   const glasses = await parseAndLoadOBJ("./assets/glasses/glasses.obj", gl, meshProgramInfo);
   const clipboard = await parseAndLoadOBJ("./assets/clipboard/clipboard.obj", gl, meshProgramInfo);
 
+  // Gadgets biome objects
+  const smartphone = await parseAndLoadOBJ("./assets/smartphone/smartphone.obj", gl, meshProgramInfo);
+  const drawingTablet = await parseAndLoadOBJ("./assets/drawingTablet/drawingTablet.obj", gl, meshProgramInfo);
+  const charger = await parseAndLoadOBJ("./assets/charger/charger.obj", gl, meshProgramInfo);
+  const headphones = await parseAndLoadOBJ("./assets/headphones/headphones.obj", gl, meshProgramInfo);
+  const drone = await parseAndLoadOBJ("./assets/drone/drone.obj", gl, meshProgramInfo);
+  const camera = await parseAndLoadOBJ("./assets/camera/camera.obj", gl, meshProgramInfo);
+  const laptop = await parseAndLoadOBJ("./assets/laptop/laptop.obj", gl, meshProgramInfo);
+  const hardDrive = await parseAndLoadOBJ("./assets/hardDrive/hardDrive.obj", gl, meshProgramInfo);
+
   // Antique biome objects
   const antiqueBookLarge = await parseAndLoadOBJ("./assets/antiqueBook/large.obj", gl, meshProgramInfo);
   const antiqueBookSmall = await parseAndLoadOBJ("./assets/antiqueBook/small.obj", gl, meshProgramInfo);
@@ -163,30 +173,47 @@ async function main() {
   const antiqueClockLarge = await parseAndLoadOBJ("./assets/antiqueClock/large.obj", gl, meshProgramInfo);
   const antiqueClockSmall = await parseAndLoadOBJ("./assets/antiqueClock/small.obj", gl, meshProgramInfo);
   const telephone = await parseAndLoadOBJ("./assets/telephone/telephone.obj", gl, meshProgramInfo);
-  
+
+  // Decorations biome objects
+  const teschinYazik = await parseAndLoadOBJ("./assets/plants/teschinYazik.obj", gl, meshProgramInfo);
+  const cactus = await parseAndLoadOBJ("./assets/plants/cactus.obj", gl, meshProgramInfo);
+  const stoneTrophy = await parseAndLoadOBJ("./assets/stoneTrophy/stoneTrophy.obj", gl, meshProgramInfo);  
+  const woodMannequin = await parseAndLoadOBJ("./assets/woodMannequin/woodMannequin.obj", gl, meshProgramInfo);
 
   const minorOffice = [
     { object: keys, needsLight: false, type: "generic", rotationRange: Math.PI * 2},
     { object: waterBottle, needsLight: false, type: "generic", rotationRange: Math.PI * 2 },
     { object: coffeeMugLarge, needsLight: false, type: "generic", rotationRange: Math.PI * 2 },
     { object: coffeeMugEspresso, needsLight: false, type: "generic", rotationRange: Math.PI * 2},
-    { object: memoBlock, needsLight: false, type: "generic", rotationRange: Math.PI * 2 / 10 },
+    { object: memoBlock, needsLight: false, type: "generic", rotationRange: Math.PI * 2 / 5 },
     { object: pencilHolder, needsLight: false, type: "generic", rotationRange: Math.PI * 2 },
     { object: glasses, needsLight: false, type: "generic", rotationRange: Math.PI * 2 },
   ];
   
-  const minorGadgets = minorOffice;
+  const minorGadgets = [
+    { object: smartphone, needsLight: false, type: "generic", rotationRange: Math.PI * 2 },
+    { object: charger, needsLight: false, type: "generic", rotationRange: Math.PI * 2 },
+    { object: headphones, needsLight: false, type: "generic", rotationRange: Math.PI * 2 },
+    { object: drone, needsLight: false, type: "generic", rotationRange: Math.PI * 2 },
+    { object: camera, needsLight: false, type: "generic", rotationRange: Math.PI * 2 },
+    { object: hardDrive, needsLight: false, type: "generic", rotationRange: Math.PI / 5 },
+  ];
   
   const minorAntiques = [
-    { object: antiqueBookSmall, needsLight: false, type: "generic", rotationRange: Math.PI / 10 },
+    { object: antiqueBookSmall, needsLight: false, type: "generic", rotationRange: Math.PI / 5 },
     { object: candleHolder, needsLight: false, type: "generic", rotationRange: Math.PI * 2 },
     { object: goblet, needsLight: false, type: "generic", rotationRange: Math.PI * 2 },
     { object: antiqueGlobe, needsLight: false, type: "generic", rotationRange: Math.PI * 2 },
-    { object: antiqueClockSmall, needsLight: false, type: "generic", rotationRange: Math.PI / 10 },
-    { object: telephone, needsLight: false, type: "generic", rotationRange: Math.PI / 10 },
+    { object: antiqueClockSmall, needsLight: false, type: "generic", rotationRange: Math.PI / 5 },
+    { object: telephone, needsLight: false, type: "generic", rotationRange: Math.PI / 5 },
   ]
   
-  const minorDecorations = minorOffice;
+  const minorDecorations = [
+    { object: teschinYazik, needsLight: false, type: "generic", rotationRange: Math.PI * 2 },
+    { object: cactus, needsLight: false, type: "generic", rotationRange: Math.PI * 2 },
+    { object: stoneTrophy, needsLight: false, type: "generic", rotationRange: Math.PI / 5 },
+    { object: woodMannequin, needsLight: false, type: "generic", rotationRange: Math.PI * 2 },
+  ];
   
   const minorGenericObjects = [{ needsLight: false, type: "lamp" }];
 
@@ -202,7 +229,10 @@ async function main() {
     { object: clipboard, needsLight: true, type: "generic", rotationRange: Math.PI / 10 },
   ]
 
-  const majorGadgets = majorOffice;
+  const majorGadgets = [
+    { object: drawingTablet, needsLight: false, type: "generic", rotationRange: Math.PI / 5 },
+    { object: laptop, needsLight: false, type: "generic", rotationRange: Math.PI / 5 },
+  ];
 
   const majorAntiques = [
     { object: antiqueBookLarge, needsLight: true, type: "generic", rotationRange: Math.PI / 10 },
