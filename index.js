@@ -589,7 +589,7 @@ async function main() {
         if (timeSinceLastBlueNoiseReset > 1) {
           timeSinceLastBlueNoiseReset = 0;
           
-          blueNoiseDemoPositions = blueNoise(blueNoiseDemoWidth, blueNoiseDemoHeight, blueNoiseDemoGridSpacing, blueNoiseDemoInnerCellSize, blueNoiseDemoCenter, blueNoiseDemoPrng);
+          blueNoiseDemoPositions = blueNoise(blueNoiseDemoWidth, blueNoiseDemoHeight, blueNoiseDemoGridSpacing, blueNoiseDemoGridSpacing, blueNoiseDemoInnerCellSize, blueNoiseDemoInnerCellSize, blueNoiseDemoCenter, blueNoiseDemoPrng);
         } else {
           timeSinceLastBlueNoiseReset += deltaTime;
         }
@@ -780,17 +780,17 @@ async function main() {
     return [rotatedX, rotatedY];
   }
   
-  function blueNoise(width, height, gridSpacing, innerCellSize, center, prng) { 
+  function blueNoise(width, height, cellWidth, cellHeight, innerCellWidth, innerCellHeight, center, prng) { 
     const positions = new Set();
-    const offset = [center[0] - (width - 1) * gridSpacing / 2, center[1] - (height - 1) * gridSpacing / 2];
+    const offset = [center[0] - (width - 1) * cellWidth / 2, center[1] - (height - 1) * cellHeight / 2];
     
     for (let i = 0; i < width; i++) {
       for (let j = 0; j < height; j++) {
-        let position = [i * gridSpacing + offset[0], j * gridSpacing + offset[1]];
+        let position = [i * cellWidth + offset[0], j * cellHeight + offset[1]];
         const center = [position[0], position[1]];
         
-        position[0] += (prng() * 2 - 1) * innerCellSize / 2;
-        position[1] += (prng() * 2 - 1) * innerCellSize / 2;
+        position[0] += (prng() * 2 - 1) * innerCellWidth / 2;
+        position[1] += (prng() * 2 - 1) * innerCellHeight / 2;
         
         positions.add([position, center]);
       }
@@ -811,16 +811,21 @@ async function main() {
     const objectSelectionPrng = new Math.seedrandom(masterPrng());
     const biomePrng = new Math.seedrandom(masterPrng());
     
+
+    const cellWidth = params.deskWidth / Math.floor(params.deskWidth / params.objectSpacing);
+    const cellHeight = params.deskDepth / Math.floor(params.deskDepth / params.objectSpacing);
     const majorObjectsInnerCellSize = params.objectSpacing - params.objectPadding * 2;
+    const innerCellWidth = majorObjectsInnerCellSize * (cellWidth / params.objectSpacing);
+    const innerCellHeight = majorObjectsInnerCellSize * (cellHeight / params.objectSpacing);
     
-    const majorObjectPositions = blueNoise(params.deskWidth / params.objectSpacing, params.deskDepth / params.objectSpacing, params.objectSpacing, majorObjectsInnerCellSize, [0, 0], majorBlueNoisePrng);
+    const majorObjectPositions = blueNoise(params.deskWidth / cellWidth, params.deskDepth / cellHeight, cellWidth, cellHeight, innerCellWidth, innerCellHeight, [0, 0], majorBlueNoisePrng);
     let minorObjectPositions = new Set();
 
     for (const majorObject of majorObjectPositions) {
       if (blueNoiseSubdividePrng() > params.majorObjectIncidence) {
         majorObjectPositions.delete(majorObject);
 
-        minorObjectPositions = new Set([...minorObjectPositions, ...blueNoise(params.minorObjectGridSubdivisionCuts, params.minorObjectGridSubdivisionCuts, params.objectSpacing / params.minorObjectGridSubdivisionCuts, majorObjectsInnerCellSize / params.minorObjectGridSubdivisionCuts, majorObject[1], minorBlueNoisePrng)]);
+        minorObjectPositions = new Set([...minorObjectPositions, ...blueNoise(params.minorObjectGridSubdivisionCuts, params.minorObjectGridSubdivisionCuts, cellWidth / params.minorObjectGridSubdivisionCuts, cellHeight / params.minorObjectGridSubdivisionCuts, innerCellWidth / params.minorObjectGridSubdivisionCuts, innerCellHeight / params.minorObjectGridSubdivisionCuts, majorObject[1], minorBlueNoisePrng)]);
       }
     }
 
@@ -890,8 +895,8 @@ async function main() {
       }
       
       if (params.renderBlueNoiseBounds) {
-        addObjectToScene(blueNoiseOuterGridCell, "debug", [majorObject[1][0], params.deskHeight, majorObject[1][1]], [0, 0, 0], [params.objectSpacing, params.objectSpacing, params.objectSpacing]);
-        addObjectToScene(blueNoiseInnerGridCell, "debug", [majorObject[1][0], params.deskHeight, majorObject[1][1]], [0, 0, 0], [params.objectSpacing - params.objectPadding * 2, params.objectSpacing - params.objectPadding * 2, params.objectSpacing - params.objectPadding * 2]);
+        addObjectToScene(blueNoiseOuterGridCell, "debug", [majorObject[1][0], params.deskHeight, majorObject[1][1]], [0, 0, 0], [cellWidth, params.objectSpacing, cellHeight]);
+        addObjectToScene(blueNoiseInnerGridCell, "debug", [majorObject[1][0], params.deskHeight, majorObject[1][1]], [0, 0, 0], [cellWidth - params.objectPadding * 2, params.objectSpacing - params.objectPadding * 2, cellHeight - params.objectPadding * 2]);
       }
     }
 
@@ -925,8 +930,8 @@ async function main() {
       }
       
       if (params.renderBlueNoiseBounds) {
-        addObjectToScene(blueNoiseOuterGridCell, "debug", [minorObject[1][0], params.deskHeight, minorObject[1][1]], [0, 0, 0], [params.objectSpacing / 2, params.objectSpacing / 2, params.objectSpacing / 2], [0.5, 0.5, 0.5]);
-        addObjectToScene(blueNoiseInnerGridCell, "debug", [minorObject[1][0], params.deskHeight, minorObject[1][1]], [0, 0, 0], [params.objectSpacing / 2 - params.objectPadding, params.objectSpacing / 2 - params.objectPadding, params.objectSpacing / 2 - params.objectPadding], [0.5, 0.5, 0.5]);
+        addObjectToScene(blueNoiseOuterGridCell, "debug", [minorObject[1][0], params.deskHeight, minorObject[1][1]], [0, 0, 0], [cellWidth / params.minorObjectGridSubdivisionCuts, params.objectSpacing / params.minorObjectGridSubdivisionCuts, cellHeight / params.minorObjectGridSubdivisionCuts], [0.5, 0.5, 0.5]);
+        addObjectToScene(blueNoiseInnerGridCell, "debug", [minorObject[1][0], params.deskHeight, minorObject[1][1]], [0, 0, 0], [cellWidth / params.minorObjectGridSubdivisionCuts - params.objectPadding, params.objectSpacing / params.minorObjectGridSubdivisionCuts - params.objectPadding, cellHeight / params.minorObjectGridSubdivisionCuts - params.objectPadding], [0.5, 0.5, 0.5]);
       }
     }
 
