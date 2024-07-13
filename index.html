@@ -7,19 +7,21 @@
     <title>Procedural Scene</title>
     <link rel="stylesheet" href="styles.css"></link>
   </head>
-  <body>    
-    <div class="container" style="display: flex;">
+  <body style="overflow: clip;">    
+    <div class="container" style="display: flex; width: 100vw">
+      <div id="loading-overlay" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.5); display: flex; justify-content: center; align-items: center; font-size: 3rem; font-weight: bold; color: white;"></div>
       <canvas id="canvas"></canvas>
-      <div class="panel" style="padding: 0.5rem;">
+      <div class="panel" style="padding: 0.5rem; overflow-y: scroll; max-height: 100vh; width: 25vw;">
         <div class="panel-header">
           <h2>Scene parameters</h2>
         </div>
-        <div class="panel-body">
+        <div class="panel-body"></div>
           <div style="margin-bottom: 1rem;">
             <label>Seed</label>
             <input type="text" id="seed" />
             <button id="reset">reset</button>
           </div>
+          <h3 style="margin-bottom: 0.25rem;">Biomes</h3>
           <div style="margin-bottom: 0.5rem;">
             <label>Desk width</label>
             <input type="number" step="0.1" id="desk-width" />
@@ -32,6 +34,7 @@
             <label>Desk depth</label>
             <input type="number" step="0.1" id="desk-depth" />
           </div>
+          <h3 style="margin-bottom: 0.25rem;">Object scattering</h3>
           <div style="margin-bottom: 0.5rem;">
             <label>Object spacing</label>
             <input type="number" step="0.01" id="object-spacing" />
@@ -52,6 +55,7 @@
             <label>Biome map scale</label>
             <input type="number" step="0.1" id="biome-map-scale" />
           </div>
+          <h3 style="margin-bottom: 0.25rem;">Desk</h3>
           <div style="margin-bottom: 0.5rem;">
             <label>Render desk legs</label>
             <input type="checkbox" id="desk-legs" />
@@ -60,6 +64,7 @@
             <label>Render desk top</label>
             <input type="checkbox" id="desk-top" />
           </div>
+          <h3 style="margin-bottom: 0.25rem;">Biomes</h3>
           <div style="margin-bottom: 0.5rem;">
             <label>Office biome</label>
             <input type="checkbox" id="office-biome" />
@@ -107,7 +112,7 @@
             <label>Render major objects</label>
             <input type="checkbox" id="major-objects" />
           </div>
-          <div style="margin-bottom: 0.5rem;">
+          <div style="margin-bottom: 1rem;">
             <label>Render minor objects</label>
             <input type="checkbox" id="minor-objects" />
           </div>

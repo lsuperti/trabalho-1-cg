@@ -5,6 +5,20 @@ import { createNoise2D } from './node_modules/simplex-noise/dist/esm/simplex-noi
 import { renderObject, parseAndLoadOBJ } from './importer.js';
 
 async function main() {
+  const loadingOverlay = document.getElementById("loading-overlay");
+  let sceneLoaded = false;
+  
+  function animateEllipsis() {
+    loadingOverlay.textContent = "Loading" + ".".repeat(ellipsisCount);
+    ellipsisCount = (ellipsisCount + 1) % 4;
+    if (!sceneLoaded) {
+      setTimeout(animateEllipsis, 200);
+    }
+  }
+
+  let ellipsisCount = 0;
+  animateEllipsis();
+  
   let seed = Math.random();
 
   const defaultParams = {
@@ -687,7 +701,15 @@ async function main() {
     //requestAnimationFrame(render);
   }
   
+  loadingOverlay.style.display = "none";
+  sceneLoaded = true;
+
   requestAnimationFrame(render);
+
+  // Redraw when the viewport resizes
+  visualViewport.onresize = function() {
+    requestAnimationFrame(render);
+  }
 
   function generateBiome(row, col, numBiomes, noiseGenerator, noiseScale = 2.5) {
     return Math.floor(((noiseGenerator(row / noiseScale, col / noiseScale) + 1) / 2) * numBiomes);
