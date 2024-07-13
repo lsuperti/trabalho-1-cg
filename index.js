@@ -101,7 +101,6 @@ async function main() {
   }
   `;
 
-
   // compiles and links the shaders, looks up attribute and uniform locations
   const meshProgramInfo = twgl.createProgramInfo(gl, [vs, fs]);
 
@@ -290,18 +289,153 @@ async function main() {
 
     biomeMapScale: 2.5,
 
-    renderBlueNoiseBounds: true,
+    renderBlueNoiseBounds: false,
     renderBlueNoisePlaceholders: false,
-    renderBiomeMap: true,
+    renderBiomeMap: false,
     renderMajorObjects: true,
     renderMinorObjects: true,
   };
+
+  let renderDeskLegs = true;
+  let renderDeskTop = true;
+  let renderDebugObjects = true;
+  let renderWorldAxis = false;
+  let useLampDebugHead = false;
 
   let scene;
   let params = defaultParams;
 
   let seed = Math.random();
-  console.log("Seed: " + seed);  
+  
+  function setSeed(value) {   
+    seed = value;
+
+    // If the value is a number, use it as the seed
+    if (!isNaN(value) && !isNaN(parseFloat(value))) {
+      seed = parseFloat(value);
+    }
+
+    scene = generateProceduralScene(seed, params);
+    requestAnimationFrame(render);
+  }
+  
+  document.getElementById("seed").value = seed;
+
+  document.getElementById("seed").addEventListener("input", setSeed);
+
+  document.getElementById("reset").addEventListener("click", function() {
+    setSeed(Math.random());
+    document.getElementById("seed").value = seed;
+  });
+
+  document.getElementById("desk-width").addEventListener("input", function() {
+    params.deskWidth = parseFloat(this.value);
+    scene = generateProceduralScene(seed, params);
+    requestAnimationFrame(render);
+  });
+
+  document.getElementById("desk-height").addEventListener("input", function() {
+    params.deskHeight = parseFloat(this.value);
+    scene = generateProceduralScene(seed, params);
+    requestAnimationFrame(render);
+  });
+
+  document.getElementById("desk-depth").addEventListener("input", function() {
+    params.deskDepth = parseFloat(this.value);
+    scene = generateProceduralScene(seed, params);
+    requestAnimationFrame(render);
+  });
+
+  document.getElementById("object-spacing").addEventListener("input", function() {
+    params.objectSpacing = parseFloat(this.value);
+    scene = generateProceduralScene(seed, params);
+    requestAnimationFrame(render);
+  });
+  
+  document.getElementById("object-padding").addEventListener("input", function() {
+    params.objectPadding = parseFloat(this.value);
+    scene = generateProceduralScene(seed, params);
+    requestAnimationFrame(render);
+  });
+  
+  document.getElementById("major-object-incidence").addEventListener("input", function() {
+    params.majorObjectIncidence = parseFloat(this.value);
+    scene = generateProceduralScene(seed, params);
+    requestAnimationFrame(render);
+  });
+  
+  document.getElementById("minor-object-grid-subdiviosions").addEventListener("input", function() {
+    params.minorObjectGridSubdivisionCuts = parseFloat(this.value);
+    scene = generateProceduralScene(seed, params);
+    requestAnimationFrame(render);
+  });
+  
+  document.getElementById("biome-map-scale").addEventListener("input", function() {
+    params.biomeMapScale = parseFloat(this.value);
+    scene = generateProceduralScene(seed, params);
+    requestAnimationFrame(render);
+  });
+
+  document.getElementById("desk-legs").addEventListener("input", function() {
+    renderDeskLegs = this.checked;
+    scene = generateProceduralScene(seed, params);
+    requestAnimationFrame(render);
+  });
+  
+  document.getElementById("desk-top").addEventListener("input", function() {
+    renderDeskTop = this.checked;
+    scene = generateProceduralScene(seed, params);
+    requestAnimationFrame(render);
+  });
+  
+  document.getElementById("render-debug-objects").addEventListener("input", function() {
+    renderDebugObjects = this.checked;
+    scene = generateProceduralScene(seed, params);
+    requestAnimationFrame(render);
+  });
+  
+  document.getElementById("world-axis").addEventListener("input", function() {
+    renderWorldAxis = this.checked;
+    scene = generateProceduralScene(seed, params);
+    requestAnimationFrame(render);
+  });
+  
+  document.getElementById("lamp-debug").addEventListener("input", function() {
+    useLampDebugHead = this.checked;
+    scene = generateProceduralScene(seed, params);
+    requestAnimationFrame(render);
+  });
+  
+  document.getElementById("blue-noise-bounds").addEventListener("input", function() {
+    params.renderBlueNoiseBounds = this.checked;
+    scene = generateProceduralScene(seed, params);
+    requestAnimationFrame(render);
+  });
+  
+  document.getElementById("blue-noise-placeholders").addEventListener("input", function() {
+    params.renderBlueNoisePlaceholders = this.checked;
+    scene = generateProceduralScene(seed, params);
+    requestAnimationFrame(render);
+  });
+  
+  document.getElementById("biome-map").addEventListener("input", function() {
+    params.renderBiomeMap = this.checked;
+    scene = generateProceduralScene(seed, params);
+    requestAnimationFrame(render);
+  });
+  
+  document.getElementById("major-objects").addEventListener("input", function() {
+    params.renderMajorObjects = this.checked;
+    scene = generateProceduralScene(seed, params);
+    requestAnimationFrame(render);
+  });
+  
+  document.getElementById("minor-objects").addEventListener("input", function() {
+    params.renderMinorObjects = this.checked;
+    scene = generateProceduralScene(seed, params);
+    requestAnimationFrame(render);
+  });
+
   const demo = "final"; // "objects", "lamp", "blueNoise", "debugObjects", "desk", "biomes", "singleObject", "final"
 
   switch (demo) {
@@ -472,13 +606,6 @@ async function main() {
         break;
       case "final":
       default:
-        const renderDebugObjects = true;
-        const renderWorldAxis = false;
-        const useLampDebugHead = true;
-        
-        const renderDeskLegs = true;
-        const renderDeskTop = true;
-
         const center = [0, 0, 0];
 
         if (renderDebugObjects && renderWorldAxis) {
@@ -520,9 +647,7 @@ async function main() {
         break;
     }
 
-    //renderObject(gl, meshProgramInfo, debugGlobalAxis);
-
-    requestAnimationFrame(render);
+    //requestAnimationFrame(render);
   }
   requestAnimationFrame(render);
 

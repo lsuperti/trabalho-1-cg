@@ -7,8 +7,97 @@
     <title>Procedural Scene</title>
     <link rel="stylesheet" href="styles.css"></link>
   </head>
-  <body>
-    <canvas id="canvas"></canvas>
+  <body>    
+    <div class="container" style="display: flex;">
+      <canvas id="canvas"></canvas>
+      <div class="panel">
+        <div class="panel-header">
+          <h2>Scene parameters</h2>
+        </div>
+        <div class="panel-body">
+          <div style="margin-bottom: 1rem;">
+            <label>Seed</label>
+            <input type="text" id="seed" />
+            <button id="reset">reset</button>
+          </div>
+          <div style="margin-bottom: 0.5rem;">
+            <label>Desk width</label>
+            <input type="number" step="0.1" value="2.5" id="desk-width" />
+          </div>
+          <div style="margin-bottom: 0.5rem;">
+            <label>Desk height</label>
+            <input type="number" step="0.1" value="1" id="desk-height" />
+          </div>
+          <div style="margin-bottom: 0.5rem;">
+            <label>Desk depth</label>
+            <input type="number" step="0.1" value="1.5" id="desk-depth" />
+          </div>
+          <div style="margin-bottom: 0.5rem;">
+            <label>Object spacing</label>
+            <input type="number" step="0.01" value="0.5" id="object-spacing" />
+          </div>
+          <div style="margin-bottom: 0.5rem;">
+            <label>Object padding</label>
+            <input type="number" step="0.01" value="0.1" id="object-padding" />
+          </div>
+          <div style="margin-bottom: 0.5rem;">
+            <label>Major object incidence</label>
+            <input type="number" step="0.01" value="0.25" min="0" max="1" id="major-object-incidence" />
+          </div>
+          <div style="margin-bottom: 0.5rem;">
+            <label>Minor object grid subdivisions</label>
+            <input type="number" step="1" value="2" id="minor-object-grid-subdiviosions" />
+          </div>
+          <div style="margin-bottom: 0.5rem;">
+            <label>Biome map scale</label>
+            <input type="number" step="0.1" value="2.5" id="biome-map-scale" />
+          </div>
+          <div style="margin-bottom: 0.5rem;">
+            <label>Render desk legs</label>
+            <input type="checkbox" checked id="desk-legs" />
+          </div>
+          <div style="margin-bottom: 0.5rem;">
+            <label>Render desk top</label>
+            <input type="checkbox" checked id="desk-top" />
+          </div>
+          <div class="panel-header">
+            <h2>Debug options</h2>
+          </div>
+          <div style="margin-bottom: 0.5rem;">
+            <label>Render debug objects</label>
+            <input type="checkbox" checked id="render-debug-objects" />
+          </div>
+          <div style="margin-bottom: 0.5rem;">
+            <label>World axis</label>
+            <input type="checkbox" id="world-axis" />
+          </div>
+          <div style="margin-bottom: 0.5rem;">
+            <label>Use lamp debug head</label>
+            <input type="checkbox" id="lamp-debug" />
+          </div>
+          <div style="margin-bottom: 0.5rem;">
+            <label>Render blue noise bounds</label>
+            <input type="checkbox" id="blue-noise-bounds" />
+          </div>
+          <div style="margin-bottom: 0.5rem;">
+            <label>Render blue noise placeholders</label>
+            <input type="checkbox" id="blue-noise-placeholders" />
+          </div>
+          <div style="margin-bottom: 0.5rem;">
+            <label>Render biome map</label>
+            <input type="checkbox" id="biome-map" />
+          </div>
+          <div style="margin-bottom: 0.5rem;">
+            <label>Render major objects</label>
+            <input type="checkbox" checked id="major-objects" />
+          </div>
+          <div style="margin-bottom: 0.5rem;">
+            <label>Render minor objects</label>
+            <input type="checkbox" checked id="minor-objects" />
+          </div>
+      </div>
+      </div>
+    </div>
 
     <script src="./node_modules/twgl.js/dist/5.x/twgl-full.js"></script>
     <script src="./node_modules/seedrandom/seedrandom.js"></script>
