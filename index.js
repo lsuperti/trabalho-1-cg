@@ -216,13 +216,6 @@ async function main() {
   
   const minorGenericObjects = [{ needsLight: false, type: "lamp" }];
 
-  const minorBiomeObjects = [
-    minorOffice.concat(minorGenericObjects),
-    minorGadgets.concat(minorGenericObjects),
-    minorAntiques.concat(minorGenericObjects),
-    minorDecorations.concat(minorGenericObjects)
-  ]
-
   const majorOffice = [
     { object: notepad, needsLight: true, type: "generic", rotationRange: Math.PI / 10 },
     { object: clipboard, needsLight: true, type: "generic", rotationRange: Math.PI / 10 },
@@ -241,13 +234,6 @@ async function main() {
   const majorDecorations = majorOffice;
 
   const majorGenericObjects = [];
-
-  const majorBiomeObjects = [
-    majorOffice.concat(majorGenericObjects),
-    majorGadgets.concat(majorGenericObjects),
-    majorAntiques.concat(majorGenericObjects),
-    majorDecorations.concat(majorGenericObjects)
-  ]
 
   const debugBiomeSquares = [
     debugRedSquare,
@@ -289,6 +275,11 @@ async function main() {
 
     biomeMapScale: 2.5,
 
+    officeBiome: true,
+    gadgetsBiome: true,
+    antiquesBiome: true,
+    decorationsBiome: true,
+
     renderBlueNoiseBounds: false,
     renderBlueNoisePlaceholders: false,
     renderBiomeMap: false,
@@ -320,6 +311,28 @@ async function main() {
   }
   
   document.getElementById("seed").value = seed;
+  document.getElementById("desk-width").value = defaultParams.deskWidth;
+  document.getElementById("desk-height").value = defaultParams.deskHeight;
+  document.getElementById("desk-depth").value = defaultParams.deskDepth;
+  document.getElementById("object-spacing").value = defaultParams.objectSpacing;
+  document.getElementById("object-padding").value = defaultParams.objectPadding;
+  document.getElementById("major-object-incidence").value = defaultParams.majorObjectIncidence;
+  document.getElementById("minor-object-grid-subdiviosions").value = defaultParams.minorObjectGridSubdivisionCuts;
+  document.getElementById("biome-map-scale").value = defaultParams.biomeMapScale;
+  document.getElementById("desk-legs").checked = renderDeskLegs;
+  document.getElementById("desk-top").checked = renderDeskTop;
+  document.getElementById("office-biome").checked = params.officeBiome
+  document.getElementById("gadgets-biome").checked = params.gadgetsBiome
+  document.getElementById("antiques-biome").checked = params.antiquesBiome
+  document.getElementById("decorations-biome").checked = params.decorationsBiome
+  document.getElementById("render-debug-objects").checked = renderDebugObjects;
+  document.getElementById("world-axis").checked = renderWorldAxis;
+  document.getElementById("lamp-debug").checked = useLampDebugHead;
+  document.getElementById("blue-noise-bounds").checked = params.renderBlueNoiseBounds;
+  document.getElementById("blue-noise-placeholders").checked = params.renderBlueNoisePlaceholders;
+  document.getElementById("biome-map").checked = params.renderBiomeMap;
+  document.getElementById("major-objects").checked = params.renderMajorObjects;
+  document.getElementById("minor-objects").checked = params.renderMinorObjects;
 
   document.getElementById("seed").addEventListener("input", setSeed);
 
@@ -384,6 +397,29 @@ async function main() {
   
   document.getElementById("desk-top").addEventListener("input", function() {
     renderDeskTop = this.checked;
+    scene = generateProceduralScene(seed, params);
+    requestAnimationFrame(render);
+  });
+
+  document.getElementById("office-biome").addEventListener("input", function() {
+    params.officeBiome = this.checked;
+    scene = generateProceduralScene(seed, params);
+    requestAnimationFrame(render);
+  });
+  document.getElementById("gadgets-biome").addEventListener("input", function() {
+    params.gadgetsBiome = this.checked;
+    scene = generateProceduralScene(seed, params);
+    requestAnimationFrame(render);
+  });
+
+  document.getElementById("antiques-biome").addEventListener("input", function() {
+    params.antiquesBiome = this.checked;
+    scene = generateProceduralScene(seed, params);
+    requestAnimationFrame(render);
+  });
+
+  document.getElementById("decorations-biome").addEventListener("input", function() {
+    params.decorationsBiome = this.checked;
     scene = generateProceduralScene(seed, params);
     requestAnimationFrame(render);
   });
@@ -594,7 +630,7 @@ async function main() {
 
         for (let i = -5; i < 5; i++) {
           for (let j = -5; j < 5; j++) {
-            const biome = generateBiome(i, j, 4, noiseDemoGenerator, 10);
+            const biome = generateBiome(i, j, numBiomes, noiseDemoGenerator, 10);
             renderObject(gl, meshProgramInfo, objects[biome], [i + 0.5, 0, j + 0.5]);
           }
         }
@@ -797,12 +833,41 @@ async function main() {
     const objectsNeedingLight = [];
     const biomeGenerator = createNoise2D(biomePrng);
 
+    let majorBiomeObjects = [];
+    let minorBiomeObjects = [];
+
+    let numBiomes = 0;
+
+    if (params.officeBiome) {
+      numBiomes++;
+      majorBiomeObjects.push(majorOffice.concat(majorGenericObjects));
+      minorBiomeObjects.push(minorOffice.concat(minorGenericObjects));
+    }
+
+    if (params.gadgetsBiome) {
+      numBiomes++;
+      majorBiomeObjects.push(majorGadgets.concat(majorGenericObjects));
+      minorBiomeObjects.push(minorGadgets.concat(minorGenericObjects));
+    }
+
+    if (params.antiquesBiome) {
+      numBiomes++;
+      majorBiomeObjects.push(majorAntiques.concat(majorGenericObjects));
+      minorBiomeObjects.push(minorAntiques.concat(minorGenericObjects));
+    }
+
+    if (params.decorationsBiome) {
+      numBiomes++;
+      majorBiomeObjects.push(majorDecorations.concat(majorGenericObjects));
+      minorBiomeObjects.push(minorDecorations.concat(minorGenericObjects));
+    }
+
     for (const majorObject of majorObjectPositions) {
-      const biome = generateBiome(majorObject[0][0], majorObject[0][1], 4, biomeGenerator, params.biomeMapScale);
+      const biome = generateBiome(majorObject[0][0], majorObject[0][1], numBiomes, biomeGenerator, params.biomeMapScale);
       if (params.renderBiomeMap) {
         addObjectToScene(debugBiomeSquares[biome], "debug", [majorObject[1][0], params.deskHeight, majorObject[1][1]], [0, 0, 0], [params.objectSpacing, params.objectSpacing, params.objectSpacing]);
       }
-      
+
       const chosenObject = majorBiomeObjects[biome][Math.floor(objectSelectionPrng() * majorBiomeObjects[biome].length)];
       const rotation = (objectSelectionPrng() * 2 - 1) * chosenObject.rotationRange / 2;
       
@@ -832,7 +897,7 @@ async function main() {
 
     // Minor objects
     for (const minorObject of minorObjectPositions) {
-      const biome = generateBiome(minorObject[0][0], minorObject[0][1], 4, biomeGenerator, params.biomeMapScale);
+      const biome = generateBiome(minorObject[0][0], minorObject[0][1], numBiomes, biomeGenerator, params.biomeMapScale);
       // Debug biome map
       if (params.renderBiomeMap) {
         addObjectToScene(debugBiomeSquares[biome], "debug", [minorObject[1][0], params.deskHeight, minorObject[1][1]], [0, 0, 0], [params.objectSpacing / params.minorObjectGridSubdivisionCuts, params.objectSpacing / params.minorObjectGridSubdivisionCuts, params.objectSpacing / params.minorObjectGridSubdivisionCuts]);
@@ -891,7 +956,7 @@ async function main() {
       // Only make the lamp look at the object if it's within 75 centimeters
       if (Math.sqrt(Math.pow(pendingLamp[0] - objectNeedingLight[0], 2) + Math.pow(pendingLamp[1] - objectNeedingLight[1], 2)) < 0.75) {
         if (params.renderMinorObjects) {
-          addLampToScene([pendingLamp[0], params.deskHeight, pendingLamp[1]], [objectNeedingLight[0], params.deskHeight, objectNeedingLight[1]], true);
+          addLampToScene([pendingLamp[0], params.deskHeight, pendingLamp[1]], [objectNeedingLight[0], params.deskHeight, objectNeedingLight[1]], numBiomes, true);
         }
         pendingLamps[assignment[0]] = null;
       }
@@ -903,7 +968,7 @@ async function main() {
         continue;
       }
       
-      addLampToScene([pendingLamp[0], params.deskHeight, pendingLamp[1]], [(objectSelectionPrng() * 2 - 1) * params.deskWidth / 2, params.deskHeight, (objectSelectionPrng() * 2 - 1) * params.deskDepth / 2], false);
+      addLampToScene([pendingLamp[0], params.deskHeight, pendingLamp[1]], [(objectSelectionPrng() * 2 - 1) * params.deskWidth / 2, params.deskHeight, (objectSelectionPrng() * 2 - 1) * params.deskDepth / 2], numBiomes, false);
     }
 
     return scene;
@@ -920,8 +985,8 @@ async function main() {
       }
     }
 
-    function addLampToScene(position, lookAt, lookingAtObject) {
-      const type = generateBiome(position[0], position[2], 4, biomeGenerator, params.biomeMapScale) == 2 ? "antique" : "default";
+    function addLampToScene(position, lookAt, numBiomes, lookingAtObject) {
+      const type = generateBiome(position[0], position[2], numBiomes, biomeGenerator, params.biomeMapScale) == 2 ? "antique" : "default";
       const sceneLamp = { position, lookAt, lookingAtObject, type };
       
       scene.lamps.add(sceneLamp);
