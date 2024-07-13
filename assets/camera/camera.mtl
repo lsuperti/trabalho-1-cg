@@ -1,0 +1,65 @@
+# Blender 4.0.2 MTL File: 'None'
+# www.blender.org
+
+newmtl Camara_material
+Ka 1.000000 1.000000 1.000000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni 1.450000
+d 1.000000
+illum 2
+map_Kd Camara_Low_V2_lambert3_BaseColor.png
+map_Ns Camara_Low_V2_lambert3_Roughness.png
+map_Bump Camara_Low_V2_lambert3_Normal.png
+
+newmtl Cilindro_material
+Ka 1.000000 1.000000 1.000000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni 1.450000
+d 1.000000
+illum 2
+map_Kd Cilindro_low-bajo_Cilindro_material_BaseCo.png
+map_Ns Cilindro_low-bajo_Cilindro_material_Roughn.png
+map_Bump Cilindro_low-bajo_Cilindro_material_Normal.png
+
+newmtl lambert1
+Ns 200.000000
+Ka 1.000000 1.000000 1.000000
+Kd 0.500000 0.500000 0.500000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni 1.450000
+d 1.000000
+illum 2
+
+newmtl lambert3
+Ns 200.000000
+Ka 1.000000 1.000000 1.000000
+Kd 0.013477 0.013477 0.013477
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni 1.450000
+d 1.000000
+illum 2
+
+newmtl lambert4
+Ns 200.000000
+Ka 1.000000 1.000000 1.000000
+Kd 0.500000 0.500000 0.500000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni 1.450000
+d 1.000000
+illum 2
+
+newmtl ruleta_
+Ka 1.000000 1.000000 1.000000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni 1.450000
+d 1.000000
+illum 2
+map_Kd ruleta_low_ruleta__BaseColor.png
+map_Ns ruleta_low_ruleta__Roughness.png
+map_Bump ruleta_low_ruleta__Normal.png

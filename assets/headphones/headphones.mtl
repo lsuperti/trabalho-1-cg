@@ -1,0 +1,24 @@
+# Blender 4.0.2 MTL File: 'None'
+# www.blender.org
+
+newmtl Wire
+Ka 1.000000 1.000000 1.000000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni 1.450000
+d 1.000000
+illum 2
+map_Kd Wire_BaseColor.png
+map_Ns Wire_Roughness.png
+map_Bump Wire_Normal.png
+
+newmtl pasted__headphones1
+Ka 1.000000 1.000000 1.000000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni 1.450000
+d 1.000000
+illum 2
+map_Kd headphone_basecolor.png
+map_Ns headphone_roughness.png
+map_Bump headphones_low_Normal.png
