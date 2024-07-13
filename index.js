@@ -5,6 +5,63 @@ import { createNoise2D } from './node_modules/simplex-noise/dist/esm/simplex-noi
 import { renderObject, parseAndLoadOBJ } from './importer.js';
 
 async function main() {
+  let seed = Math.random();
+
+  const defaultParams = {
+    deskWidth: 2.5,
+    deskHeight: 1,
+    deskDepth: 1.5,
+    
+    objectSpacing: 0.5,
+    objectPadding: 0.1,
+
+    majorObjectIncidence: 0.25,
+    minorObjectGridSubdivisionCuts: 2,
+
+    biomeMapScale: 2.5,
+
+    officeBiome: true,
+    gadgetsBiome: true,
+    antiquesBiome: true,
+    decorationsBiome: true,
+
+    renderBlueNoiseBounds: false,
+    renderBlueNoisePlaceholders: false,
+    renderBiomeMap: false,
+    renderMajorObjects: true,
+    renderMinorObjects: true,
+  };
+
+  let renderDeskLegs = true;
+  let renderDeskTop = true;
+  let renderDebugObjects = true;
+  let renderWorldAxis = false;
+  let useLampDebugHead = false;
+  
+  document.getElementById("seed").value = seed;
+  document.getElementById("desk-width").value = defaultParams.deskWidth;
+  document.getElementById("desk-height").value = defaultParams.deskHeight;
+  document.getElementById("desk-depth").value = defaultParams.deskDepth;
+  document.getElementById("object-spacing").value = defaultParams.objectSpacing;
+  document.getElementById("object-padding").value = defaultParams.objectPadding;
+  document.getElementById("major-object-incidence").value = defaultParams.majorObjectIncidence;
+  document.getElementById("minor-object-grid-subdiviosions").value = defaultParams.minorObjectGridSubdivisionCuts;
+  document.getElementById("biome-map-scale").value = defaultParams.biomeMapScale;
+  document.getElementById("desk-legs").checked = renderDeskLegs;
+  document.getElementById("desk-top").checked = renderDeskTop;
+  document.getElementById("office-biome").checked = defaultParams.officeBiome
+  document.getElementById("gadgets-biome").checked = defaultParams.gadgetsBiome
+  document.getElementById("antiques-biome").checked = defaultParams.antiquesBiome
+  document.getElementById("decorations-biome").checked = defaultParams.decorationsBiome
+  document.getElementById("render-debug-objects").checked = renderDebugObjects;
+  document.getElementById("world-axis").checked = renderWorldAxis;
+  document.getElementById("lamp-debug").checked = useLampDebugHead;
+  document.getElementById("blue-noise-bounds").checked = defaultParams.renderBlueNoiseBounds;
+  document.getElementById("blue-noise-placeholders").checked = defaultParams.renderBlueNoisePlaceholders;
+  document.getElementById("biome-map").checked = defaultParams.renderBiomeMap;
+  document.getElementById("major-objects").checked = defaultParams.renderMajorObjects;
+  document.getElementById("minor-objects").checked = defaultParams.renderMinorObjects;
+  
   // Get A WebGL context
   /** @type {HTMLCanvasElement} */
   const canvas = document.querySelector("#canvas");
@@ -262,41 +319,8 @@ async function main() {
   let overrideLookAt = false;
   let lookAt = [0, 0, 0];
 
-  const defaultParams = {
-    deskWidth: 2.5,
-    deskHeight: 1,
-    deskDepth: 1.5,
-    
-    objectSpacing: 0.5,
-    objectPadding: 0.1,
-
-    majorObjectIncidence: 0.25,
-    minorObjectGridSubdivisionCuts: 2,
-
-    biomeMapScale: 2.5,
-
-    officeBiome: true,
-    gadgetsBiome: true,
-    antiquesBiome: true,
-    decorationsBiome: true,
-
-    renderBlueNoiseBounds: false,
-    renderBlueNoisePlaceholders: false,
-    renderBiomeMap: false,
-    renderMajorObjects: true,
-    renderMinorObjects: true,
-  };
-
-  let renderDeskLegs = true;
-  let renderDeskTop = true;
-  let renderDebugObjects = true;
-  let renderWorldAxis = false;
-  let useLampDebugHead = false;
-
   let scene;
   let params = defaultParams;
-
-  let seed = Math.random();
   
   function setSeed(value) {   
     seed = value;
@@ -309,30 +333,6 @@ async function main() {
     scene = generateProceduralScene(seed, params);
     requestAnimationFrame(render);
   }
-  
-  document.getElementById("seed").value = seed;
-  document.getElementById("desk-width").value = defaultParams.deskWidth;
-  document.getElementById("desk-height").value = defaultParams.deskHeight;
-  document.getElementById("desk-depth").value = defaultParams.deskDepth;
-  document.getElementById("object-spacing").value = defaultParams.objectSpacing;
-  document.getElementById("object-padding").value = defaultParams.objectPadding;
-  document.getElementById("major-object-incidence").value = defaultParams.majorObjectIncidence;
-  document.getElementById("minor-object-grid-subdiviosions").value = defaultParams.minorObjectGridSubdivisionCuts;
-  document.getElementById("biome-map-scale").value = defaultParams.biomeMapScale;
-  document.getElementById("desk-legs").checked = renderDeskLegs;
-  document.getElementById("desk-top").checked = renderDeskTop;
-  document.getElementById("office-biome").checked = params.officeBiome
-  document.getElementById("gadgets-biome").checked = params.gadgetsBiome
-  document.getElementById("antiques-biome").checked = params.antiquesBiome
-  document.getElementById("decorations-biome").checked = params.decorationsBiome
-  document.getElementById("render-debug-objects").checked = renderDebugObjects;
-  document.getElementById("world-axis").checked = renderWorldAxis;
-  document.getElementById("lamp-debug").checked = useLampDebugHead;
-  document.getElementById("blue-noise-bounds").checked = params.renderBlueNoiseBounds;
-  document.getElementById("blue-noise-placeholders").checked = params.renderBlueNoisePlaceholders;
-  document.getElementById("biome-map").checked = params.renderBiomeMap;
-  document.getElementById("major-objects").checked = params.renderMajorObjects;
-  document.getElementById("minor-objects").checked = params.renderMinorObjects;
 
   document.getElementById("seed").addEventListener("input", setSeed);
 
@@ -683,8 +683,10 @@ async function main() {
         break;
     }
 
+    // Uncomment to animate
     //requestAnimationFrame(render);
   }
+  
   requestAnimationFrame(render);
 
   function generateBiome(row, col, numBiomes, noiseGenerator, noiseScale = 2.5) {
