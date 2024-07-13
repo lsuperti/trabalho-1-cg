@@ -9,8 +9,8 @@ Ke 0.000000 0.000000 0.000000
 Ni 1.500000
 d 1.000000
 illum 2
-map_Kd KeyTag_baseColor.png
-map_Bump KeyTag_normal.png
+map_Kd KeyTag_baseColor.jpg
+map_Bump KeyTag_normal.jpg
 
 newmtl Ring
 Ns 250.000000
@@ -20,8 +20,8 @@ Ke 0.000000 0.000000 0.000000
 Ni 1.500000
 d 1.000000
 illum 2
-map_Kd Ring_baseColor.png
-map_Bump Ring_normal.png
+map_Kd Ring_baseColor.jpg
+map_Bump Ring_normal.jpg
 
 newmtl material
 Ns 250.000000
@@ -31,5 +31,5 @@ Ke 0.000000 0.000000 0.000000
 Ni 1.500000
 d 1.000000
 illum 2
-map_Kd material_baseColor.png
-map_Bump material_normal.png
+map_Kd material_baseColor.jpg
+map_Bump material_normal.jpg

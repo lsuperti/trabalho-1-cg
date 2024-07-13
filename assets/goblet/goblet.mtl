@@ -8,6 +8,6 @@ Ke 0.000000 0.000000 0.000000
 Ni 1.450000
 d 1.000000
 illum 2
-map_Kd goblet_Albedo.png
-map_Ns goblet_Roughness.png
-map_Bump goblet_Normal.png
+map_Kd goblet_Albedo.jpg
+map_Ns goblet_Roughness.jpg
+map_Bump goblet_Normal.jpg

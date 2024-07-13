@@ -7,6 +7,6 @@ Ks 0.500000 0.500000 0.500000
 Ke 0.000000 0.000000 0.000000
 Ni 1.450000
 illum 2
-map_Kd large_Base_color.png
-map_Ns large_Roughness.png
-map_Bump large_Normal.png
+map_Kd large_Base_color.jpg
+map_Ns large_Roughness.jpg
+map_Bump large_Normal.jpg

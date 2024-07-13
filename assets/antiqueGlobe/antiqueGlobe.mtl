@@ -8,6 +8,6 @@ Ke 0.000000 0.000000 0.000000
 Ni 1.450000
 d 1.000000
 illum 3
-map_Kd Globe_Diffuse.png
-map_Ns Globe_Rough.png
-map_Bump Globe_normals.png
+map_Kd Globe_Diffuse.jpg
+map_Ns Globe_Rough.jpg
+map_Bump Globe_normals.jpg
