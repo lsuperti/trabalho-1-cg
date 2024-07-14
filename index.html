@@ -13,109 +13,140 @@
       <canvas id="canvas"></canvas>
       <div class="panel" style="padding: 0.5rem; overflow-y: scroll; max-height: 100vh; width: 25vw;">
         <div class="panel-header">
-          <h2>Scene parameters</h2>
+          <h2>Camera controls</h2>
         </div>
-        <div class="panel-body"></div>
-          <div style="margin-bottom: 1rem;">
-            <label>Seed</label>
-            <input type="text" id="seed" />
-            <button id="reset">reset</button>
-          </div>
-          <h3 style="margin-bottom: 0.25rem;">Biomes</h3>
-          <div style="margin-bottom: 0.5rem;">
-            <label>Desk width</label>
-            <input type="number" step="0.1" id="desk-width" />
-          </div>
-          <div style="margin-bottom: 0.5rem;">
-            <label>Desk height</label>
-            <input type="number" step="0.1" id="desk-height" />
-          </div>
-          <div style="margin-bottom: 0.5rem;">
-            <label>Desk depth</label>
-            <input type="number" step="0.1" id="desk-depth" />
-          </div>
-          <h3 style="margin-bottom: 0.25rem;">Object scattering</h3>
-          <div style="margin-bottom: 0.5rem;">
-            <label>Object spacing</label>
-            <input type="number" step="0.01" id="object-spacing" />
-          </div>
-          <div style="margin-bottom: 0.5rem;">
-            <label>Object padding</label>
-            <input type="number" step="0.01" id="object-padding" />
-          </div>
-          <div style="margin-bottom: 0.5rem;">
-            <label>Major object incidence</label>
-            <input type="number" step="0.01" min="0" max="1" id="major-object-incidence" />
-          </div>
-          <div style="margin-bottom: 0.5rem;">
-            <label>Minor object grid subdivisions</label>
-            <input type="number" step="1" id="minor-object-grid-subdiviosions" />
-          </div>
-          <div style="margin-bottom: 0.5rem;">
-            <label>Biome map scale</label>
-            <input type="number" step="0.1" id="biome-map-scale" />
-          </div>
-          <h3 style="margin-bottom: 0.25rem;">Desk</h3>
-          <div style="margin-bottom: 0.5rem;">
-            <label>Render desk legs</label>
-            <input type="checkbox" id="desk-legs" />
-          </div>
-          <div style="margin-bottom: 0.5rem;">
-            <label>Render desk top</label>
-            <input type="checkbox" id="desk-top" />
-          </div>
-          <h3 style="margin-bottom: 0.25rem;">Biomes</h3>
-          <div style="margin-bottom: 0.5rem;">
-            <label>Office biome</label>
-            <input type="checkbox" id="office-biome" />
-          </div>
-          <div style="margin-bottom: 0.5rem;">
-            <label>Gadgets biome</label>
-            <input type="checkbox" id="gadgets-biome" />
-          </div>
-          <div style="margin-bottom: 0.5rem;">
-            <label>Antiques biome</label>
-            <input type="checkbox" id="antiques-biome" />
-          </div>
-          <div style="margin-bottom: 0.5rem;">
-            <label>Decorations biome</label>
-            <input type="checkbox" id="decorations-biome" />
-          </div>
+        <div style="margin-bottom: 0.5rem;">
+          <label>Position X</label>
+          <input type="number" step="0.1" id="camera-x" />
+        </div>
+        <div style="margin-bottom: 0.5rem;">
+          <label>Position Y</label>
+          <input type="number" step="0.1" id="camera-y" />
+        </div>
+        <div style="margin-bottom: 0.5rem;">
+          <label>Position Z</label>
+          <input type="number" step="0.1" id="camera-z" />
+        </div>
+        <div style="margin-bottom: 0.5rem;">
+          <label>Look at X</label>
+          <input type="number" step="0.1" id="look-at-x" />
+        </div>
+        <div style="margin-bottom: 0.5rem;">
+          <label>Look at Y</label>
+          <input type="number" step="0.1" id="look-at-y" />
+        </div>
+        <div style="margin-bottom: 0.5rem;">
+          <label>Look at Z</label>
+          <input type="number" step="0.1" id="look-at-z" />
+        </div>
+        <div style="display: block;">
+          <button id="camera-forward" style="margin-left: 0.125rem; margin-right: 0.125rem;">Move camera forward</button>
+          <button id="camera-backward" style="margin-left: 0.125rem; margin-right: 0.125rem;">Move camera backward</button>
+        </div>
+        <div class="panel" style="padding: 0.5rem; overflow-y: scroll; max-height: 100vh; width: 25vw;">
           <div class="panel-header">
-            <h2>Debug options</h2>
+            <h2>Scene parameters</h2>
           </div>
-          <div style="margin-bottom: 0.5rem;">
-            <label>Render debug objects</label>
-            <input type="checkbox" id="render-debug-objects" />
-          </div>
-          <div style="margin-bottom: 0.5rem;">
-            <label>World axis</label>
-            <input type="checkbox" id="world-axis" />
-          </div>
-          <div style="margin-bottom: 0.5rem;">
-            <label>Use lamp debug head</label>
-            <input type="checkbox" id="lamp-debug" />
-          </div>
-          <div style="margin-bottom: 0.5rem;">
-            <label>Blue noise bounds</label>
-            <input type="checkbox" id="blue-noise-bounds" />
-          </div>
-          <div style="margin-bottom: 0.5rem;">
-            <label>Blue noise placeholders</label>
-            <input type="checkbox" id="blue-noise-placeholders" />
-          </div>
-          <div style="margin-bottom: 0.5rem;">
-            <label>Biome map</label>
-            <input type="checkbox" id="biome-map" />
-          </div>
-          <div style="margin-bottom: 0.5rem;">
-            <label>Render major objects</label>
-            <input type="checkbox" id="major-objects" />
-          </div>
-          <div style="margin-bottom: 1rem;">
-            <label>Render minor objects</label>
-            <input type="checkbox" id="minor-objects" />
-          </div>
+        <div style="margin-bottom: 1rem;">
+          <label>Seed</label>
+          <input type="text" id="seed" />
+          <button id="reset">reset</button>
+        </div>
+        <h3 style="margin-bottom: 0.25rem;" class="panel-subheader">Biomes</h3>
+        <div style="margin-bottom: 0.5rem;">
+          <label>Desk width</label>
+          <input type="number" step="0.1" id="desk-width" />
+        </div>
+        <div style="margin-bottom: 0.5rem;">
+          <label>Desk height</label>
+          <input type="number" step="0.1" id="desk-height" />
+        </div>
+        <div style="margin-bottom: 0.5rem;">
+          <label>Desk depth</label>
+          <input type="number" step="0.1" id="desk-depth" />
+        </div>
+        <h3 style="margin-bottom: 0.25rem;" class="panel-subheader">Object scattering</h3>
+        <div style="margin-bottom: 0.5rem;">
+          <label>Object spacing</label>
+          <input type="number" step="0.01" id="object-spacing" />
+        </div>
+        <div style="margin-bottom: 0.5rem;">
+          <label>Object padding</label>
+          <input type="number" step="0.01" id="object-padding" />
+        </div>
+        <div style="margin-bottom: 0.5rem;">
+          <label>Major object incidence</label>
+          <input type="number" step="0.01" min="0" max="1" id="major-object-incidence" />
+        </div>
+        <div style="margin-bottom: 0.5rem;">
+          <label>Minor object grid subdivisions</label>
+          <input type="number" step="1" id="minor-object-grid-subdiviosions" />
+        </div>
+        <div style="margin-bottom: 0.5rem;">
+          <label>Biome map scale</label>
+          <input type="number" step="0.1" id="biome-map-scale" />
+        </div>
+        <h3 style="margin-bottom: 0.25rem;" class="panel-subheader">Desk</h3>
+        <div style="margin-bottom: 0.5rem;">
+          <label>Render desk legs</label>
+          <input type="checkbox" id="desk-legs" />
+        </div>
+        <div style="margin-bottom: 0.5rem;">
+          <label>Render desk top</label>
+          <input type="checkbox" id="desk-top" />
+        </div>
+        <h3 style="margin-bottom: 0.25rem;" class="panel-subheader">Biomes</h3>
+        <div style="margin-bottom: 0.5rem;">
+          <label>Office biome</label>
+          <input type="checkbox" id="office-biome" />
+        </div>
+        <div style="margin-bottom: 0.5rem;">
+          <label>Gadgets biome</label>
+          <input type="checkbox" id="gadgets-biome" />
+        </div>
+        <div style="margin-bottom: 0.5rem;">
+          <label>Antiques biome</label>
+          <input type="checkbox" id="antiques-biome" />
+        </div>
+        <div style="margin-bottom: 0.5rem;">
+          <label>Decorations biome</label>
+          <input type="checkbox" id="decorations-biome" />
+        </div>
+        <div class="panel-header">
+          <h2>Debug options</h2>
+        </div>
+        <div style="margin-bottom: 0.5rem;">
+          <label>Render debug objects</label>
+          <input type="checkbox" id="render-debug-objects" />
+        </div>
+        <div style="margin-bottom: 0.5rem;">
+          <label>World axis</label>
+          <input type="checkbox" id="world-axis" />
+        </div>
+        <div style="margin-bottom: 0.5rem;">
+          <label>Use lamp debug head</label>
+          <input type="checkbox" id="lamp-debug" />
+        </div>
+        <div style="margin-bottom: 0.5rem;">
+          <label>Blue noise bounds</label>
+          <input type="checkbox" id="blue-noise-bounds" />
+        </div>
+        <div style="margin-bottom: 0.5rem;">
+          <label>Blue noise placeholders</label>
+          <input type="checkbox" id="blue-noise-placeholders" />
+        </div>
+        <div style="margin-bottom: 0.5rem;">
+          <label>Biome map</label>
+          <input type="checkbox" id="biome-map" />
+        </div>
+        <div style="margin-bottom: 0.5rem;">
+          <label>Render major objects</label>
+          <input type="checkbox" id="major-objects" />
+        </div>
+        <div style="margin-bottom: 1rem;">
+          <label>Render minor objects</label>
+          <input type="checkbox" id="minor-objects" />
+        </div>
       </div>
       </div>
     </div>

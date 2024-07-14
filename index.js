@@ -20,6 +20,8 @@ async function main() {
   animateEllipsis();
   
   let seed = Math.random();
+  let cameraLookAt = [0, 1, 0];
+  let cameraPosition = [0, 2.5, -2];
 
   const defaultParams = {
     deskWidth: 2.5,
@@ -51,7 +53,13 @@ async function main() {
   let renderDebugObjects = true;
   let renderWorldAxis = false;
   let useLampDebugHead = false;
-  
+
+  document.getElementById("camera-x").value = cameraPosition[0];
+  document.getElementById("camera-y").value = cameraPosition[1];
+  document.getElementById("camera-z").value = cameraPosition[2];
+  document.getElementById("look-at-x").value = cameraLookAt[0];
+  document.getElementById("look-at-y").value = cameraLookAt[1];
+  document.getElementById("look-at-z").value = cameraLookAt[2];
   document.getElementById("seed").value = seed;
   document.getElementById("desk-width").value = defaultParams.deskWidth;
   document.getElementById("desk-height").value = defaultParams.deskHeight;
@@ -335,10 +343,50 @@ async function main() {
   const blueNoiseDemoCenter = [0, 0];
   
   let overrideLookAt = false;
-  let lookAt = [0, 0, 0];
+  let fullCameraControl = false;
 
   let scene;
   let params = defaultParams;
+
+  document.getElementById("camera-x").addEventListener("input", function() {
+    cameraPosition[0] = parseFloat(this.value);
+    requestAnimationFrame(render);
+  });
+
+  document.getElementById("camera-y").addEventListener("input", function() {
+    cameraPosition[1] = parseFloat(this.value);
+    requestAnimationFrame(render);
+  });
+
+  document.getElementById("camera-z").addEventListener("input", function() {
+    cameraPosition[2] = parseFloat(this.value);
+    requestAnimationFrame(render);
+  });
+
+  document.getElementById("look-at-x").addEventListener("input", function() {
+    cameraLookAt[0] = parseFloat(this.value);
+    requestAnimationFrame(render);
+  });
+
+  document.getElementById("look-at-y").addEventListener("input", function() {
+    cameraLookAt[1] = parseFloat(this.value);
+    requestAnimationFrame(render);
+  });
+
+  document.getElementById("look-at-z").addEventListener("input", function() {
+    cameraLookAt[2] = parseFloat(this.value);
+    requestAnimationFrame(render);
+  });
+
+  document.getElementById("camera-forward").addEventListener("click", function() {
+    moveCameraForward(0.1);
+    requestAnimationFrame(render);
+  });
+
+  document.getElementById("camera-backward").addEventListener("click", function() {
+    moveCameraForward(-0.1);
+    requestAnimationFrame(render);
+  });
   
   function setSeed(value) {   
     seed = value;
@@ -522,7 +570,7 @@ async function main() {
       mainObject = deskBar;
       cameraPositionOffset = [0, 2.5, 4];
       overrideLookAt = true;
-      lookAt = [0, 0.5, 0];
+      cameraLookAt = [0, 0.5, 0];
       zFarMultiplier = 2;
       animate = true;
       break;
@@ -542,9 +590,7 @@ async function main() {
       break;
     case "final":
     default:
-      overrideLookAt = true;
-      lookAt = [0, 1, 0];
-      cameraPositionOffset = [0, 2.5, 2];
+      fullCameraControl = true;
       scene = generateProceduralScene(seed, params);
       animate = false;
       break;
@@ -569,10 +615,12 @@ async function main() {
     const up = [0, 1, 0];
     // Compute the camera's matrix using look at.
     let camera;
-    if (!overrideLookAt) {
+    if (fullCameraControl) {
+      camera = twgl.m4.lookAt(cameraPosition, cameraLookAt, up);
+    } else if (!overrideLookAt) {
       camera = twgl.m4.lookAt(twgl.v3.add(mainObject.cameraPosition, cameraPositionOffset), mainObject.cameraTarget, up);
     } else {
-      camera = twgl.m4.lookAt(cameraPositionOffset, lookAt, up);
+      camera = twgl.m4.lookAt(cameraPositionOffset, cameraLookAt, up);
     }
 
     // Make a view matrix from the camera matrix.
@@ -815,6 +863,27 @@ async function main() {
     const rotatedX = x * cos - y * sin;
     const rotatedY = x * sin + y * cos;
     return [rotatedX, rotatedY];
+  }
+
+  function moveCameraForward(distance) {
+    const cameraDirection = [
+      cameraLookAt[0] - cameraPosition[0],
+      cameraLookAt[1] - cameraPosition[1],
+      cameraLookAt[2] - cameraPosition[2]
+    ];
+    const cameraDirectionLength = Math.sqrt(
+      cameraDirection[0] * cameraDirection[0] +
+      cameraDirection[1] * cameraDirection[1] +
+      cameraDirection[2] * cameraDirection[2]
+    );
+    const normalizedCameraDirection = [
+      cameraDirection[0] / cameraDirectionLength,
+      cameraDirection[1] / cameraDirectionLength,
+      cameraDirection[2] / cameraDirectionLength
+    ];
+    cameraPosition[0] += normalizedCameraDirection[0] * distance;
+    cameraPosition[1] += normalizedCameraDirection[1] * distance;
+    cameraPosition[2] += normalizedCameraDirection[2] * distance;
   }
   
   function blueNoise(width, height, cellWidth, cellHeight, innerCellWidth, innerCellHeight, center, prng) { 
