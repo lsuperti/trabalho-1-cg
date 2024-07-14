@@ -21,7 +21,7 @@ async function main() {
   
   let seed = Math.random();
   let cameraLookAt = [0, 1, 0];
-  let cameraPosition = [0, 2.5, -2];
+  let cameraPosition = [0, 2.5, 2];
 
   const defaultParams = {
     deskWidth: 2.5,
@@ -400,7 +400,9 @@ async function main() {
     requestAnimationFrame(render);
   }
 
-  document.getElementById("seed").addEventListener("input", setSeed);
+  document.getElementById("seed").addEventListener("input", function() {
+    setSeed(this.value);
+  });
 
   document.getElementById("reset").addEventListener("click", function() {
     setSeed(Math.random());
