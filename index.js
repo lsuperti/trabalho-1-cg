@@ -332,6 +332,7 @@ async function main() {
   let cameraPositionOffset = [0, 0, 0];
   let mainObject = debugGlobalAxis;
   let zFarMultiplier = 1;
+  let zNearDivisor = 1;
   
   let blueNoiseDemoPrng;
   let blueNoiseDemoPositions;
@@ -605,6 +606,7 @@ async function main() {
       scene = generateProceduralScene(seed, params);
       animate = false;
       mainObject = floor;
+      zNearDivisor = 10;
       break;
   }
 
@@ -622,7 +624,7 @@ async function main() {
 
     const fieldOfViewRadians = degToRad(60);
     const aspect = gl.canvas.clientWidth / gl.canvas.clientHeight;
-    const projection = twgl.m4.perspective(fieldOfViewRadians, aspect, mainObject.zNear, mainObject.zFar * zFarMultiplier);
+    const projection = twgl.m4.perspective(fieldOfViewRadians, aspect, mainObject.zNear / zNearDivisor, mainObject.zFar * zFarMultiplier);
     
     const up = [0, 1, 0];
     // Compute the camera's matrix using look at.
@@ -989,7 +991,7 @@ async function main() {
     for (const majorObject of majorObjectPositions) {
       const biome = generateBiome(majorObject[0][0], majorObject[0][1], numBiomes, biomeGenerator, params.biomeMapScale);
       if (params.renderBiomeMap) {
-        addObjectToScene(debugBiomeSquares[biome], "debug", [majorObject[1][0], params.deskHeight, majorObject[1][1]], [0, 0, 0], [params.objectSpacing, params.objectSpacing, params.objectSpacing]);
+        addObjectToScene(debugBiomeSquares[biome], "debug", [majorObject[1][0], params.deskHeight, majorObject[1][1]], [0, 0, 0], [cellWidth, params.objectSpacing, cellHeight]);
       }
 
       const chosenObject = majorBiomeObjects[biome][Math.floor(objectSelectionPrng() * majorBiomeObjects[biome].length)];
@@ -1024,7 +1026,7 @@ async function main() {
       const biome = generateBiome(minorObject[0][0], minorObject[0][1], numBiomes, biomeGenerator, params.biomeMapScale);
       // Debug biome map
       if (params.renderBiomeMap) {
-        addObjectToScene(debugBiomeSquares[biome], "debug", [minorObject[1][0], params.deskHeight, minorObject[1][1]], [0, 0, 0], [params.objectSpacing / params.minorObjectGridSubdivisionCuts, params.objectSpacing / params.minorObjectGridSubdivisionCuts, params.objectSpacing / params.minorObjectGridSubdivisionCuts]);
+        addObjectToScene(debugBiomeSquares[biome], "debug", [minorObject[1][0], params.deskHeight, minorObject[1][1]], [0, 0, 0], [cellWidth / params.minorObjectGridSubdivisionCuts, params.objectSpacing / params.minorObjectGridSubdivisionCuts, cellHeight / params.minorObjectGridSubdivisionCuts]);
       }
       
       const chosenObject = minorBiomeObjects[biome][Math.floor(objectSelectionPrng() * minorBiomeObjects[biome].length)];
