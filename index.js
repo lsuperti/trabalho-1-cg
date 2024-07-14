@@ -593,6 +593,7 @@ async function main() {
       fullCameraControl = true;
       scene = generateProceduralScene(seed, params);
       animate = false;
+      mainObject = floor;
       break;
   }
 
@@ -762,6 +763,7 @@ async function main() {
     }
   }
   
+  canvas.style.backgroundColor = "#a2caf1";
   loadingOverlay.style.display = "none";
   sceneLoaded = true;
 
