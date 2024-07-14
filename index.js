@@ -36,6 +36,8 @@ async function main() {
 
     biomeMapScale: 2.5,
 
+    maxLampDistance: 0.75,
+
     officeBiome: true,
     gadgetsBiome: true,
     antiquesBiome: true,
@@ -71,6 +73,7 @@ async function main() {
   document.getElementById("biome-map-scale").value = defaultParams.biomeMapScale;
   document.getElementById("desk-legs").checked = renderDeskLegs;
   document.getElementById("desk-top").checked = renderDeskTop;
+  document.getElementById("max-lamp-distance").value = defaultParams.maxLampDistance;
   document.getElementById("office-biome").checked = defaultParams.officeBiome
   document.getElementById("gadgets-biome").checked = defaultParams.gadgetsBiome
   document.getElementById("antiques-biome").checked = defaultParams.antiquesBiome
@@ -423,6 +426,12 @@ async function main() {
 
   document.getElementById("desk-depth").addEventListener("input", function() {
     params.deskDepth = parseFloat(this.value);
+    scene = generateProceduralScene(seed, params);
+    requestAnimationFrame(render);
+  });
+
+  document.getElementById("max-lamp-distance").addEventListener("input", function() {
+    params.maxLampDistance = parseFloat(this.value);
     scene = generateProceduralScene(seed, params);
     requestAnimationFrame(render);
   });
@@ -1072,8 +1081,8 @@ async function main() {
       const pendingLamp = pendingLamps[assignment[0]];
       const objectNeedingLight = objectsNeedingLight[assignment[1]];
       
-      // Only make the lamp look at the object if it's within 75 centimeters
-      if (Math.sqrt(Math.pow(pendingLamp[0] - objectNeedingLight[0], 2) + Math.pow(pendingLamp[1] - objectNeedingLight[1], 2)) < 0.75) {
+      // Only make the lamp look at the object if it's within a certain distance
+      if (Math.sqrt(Math.pow(pendingLamp[0] - objectNeedingLight[0], 2) + Math.pow(pendingLamp[1] - objectNeedingLight[1], 2)) < params.maxLampDistance) {
         if (params.renderMinorObjects) {
           addLampToScene([pendingLamp[0], params.deskHeight, pendingLamp[1]], [objectNeedingLight[0], params.deskHeight, objectNeedingLight[1]], numBiomes, true);
         }
