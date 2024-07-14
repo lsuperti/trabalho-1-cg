@@ -179,6 +179,9 @@ async function main() {
     return deg * Math.PI / 180;
   }
 
+  // Scene objects
+  const floor = await parseAndLoadOBJ("./assets/floor/floor.obj", gl, meshProgramInfo);
+
   // "objects" demo objects
   const windmill = await parseAndLoadOBJ("./assets/windmill/windmill.obj", gl, meshProgramInfo);
   const chair = await parseAndLoadOBJ("./assets/chair/chair.obj", gl, meshProgramInfo);
@@ -673,8 +676,8 @@ async function main() {
 
         // Desk        
         renderDesk(params.deskWidth, params.deskHeight, params.deskDepth, center, renderDeskLegs, renderDeskTop);
-        // Floor (placeholder)
-        renderObject(gl, meshProgramInfo, debugPlane);
+        // Floor
+        renderObject(gl, meshProgramInfo, floor, center);
         
         // Debug objects
         if (renderDebugObjects) {
@@ -983,9 +986,13 @@ async function main() {
       costMatrix.push(row);
     }
 
+    let assignments = [];
+
     // Apply the Hungarian algorithm to find the best combination
-    const munkers = new Munkres();
-    const assignments = munkers.compute(costMatrix);
+    if (costMatrix.length > 0) {
+      const munkers = new Munkres();
+      assignments = munkers.compute(costMatrix);
+    }
 
     // Render the lamps looking at the assigned objects
     for (const assignment of assignments) {
