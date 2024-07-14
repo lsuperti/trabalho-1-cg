@@ -8,9 +8,9 @@ Ke 0.000000 0.000000 0.000000
 Ni 1.450000
 d 1.000000
 illum 2
-map_Kd Wire_BaseColor.png
-map_Ns Wire_Roughness.png
-map_Bump Wire_Normal.png
+map_Kd Wire_BaseColor.jpg
+map_Ns Wire_Roughness.jpg
+map_Bump Wire_Normal.jpg
 
 newmtl pasted__headphones1
 Ka 1.000000 1.000000 1.000000
@@ -19,6 +19,6 @@ Ke 0.000000 0.000000 0.000000
 Ni 1.450000
 d 1.000000
 illum 2
-map_Kd headphone_basecolor.png
-map_Ns headphone_roughness.png
-map_Bump headphones_low_Normal.png
+map_Kd headphone_basecolor.jpg
+map_Ns headphone_roughness.jpg
+map_Bump headphones_low_Normal.jpg

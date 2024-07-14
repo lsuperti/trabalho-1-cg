@@ -8,9 +8,9 @@ Ke 0.000000 0.000000 0.000000
 Ni 1.450000
 d 1.000000
 illum 2
-map_Kd charger_low_Material.001_BaseColor.png
-map_Ns charger_low_Material.001_Roughness.png
-map_Bump charger_low_Material.001_Normal.png
+map_Kd charger_low_Material.001_BaseColor.jpg
+map_Ns charger_low_Material.001_Roughness.jpg
+map_Bump charger_low_Material.001_Normal.jpg
 
 newmtl Material.002
 Ns 1000.000000

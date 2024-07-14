@@ -8,9 +8,9 @@ Ke 0.000000 0.000000 0.000000
 Ni 1.450000
 d 1.000000
 illum 2
-map_Kd Camara_Low_V2_lambert3_BaseColor.png
-map_Ns Camara_Low_V2_lambert3_Roughness.png
-map_Bump Camara_Low_V2_lambert3_Normal.png
+map_Kd Camara_Low_V2_lambert3_BaseColor.jpg
+map_Ns Camara_Low_V2_lambert3_Roughness.jpg
+map_Bump Camara_Low_V2_lambert3_Normal.jpg
 
 newmtl Cilindro_material
 Ka 1.000000 1.000000 1.000000
@@ -19,9 +19,9 @@ Ke 0.000000 0.000000 0.000000
 Ni 1.450000
 d 1.000000
 illum 2
-map_Kd Cilindro_low-bajo_Cilindro_material_BaseCo.png
-map_Ns Cilindro_low-bajo_Cilindro_material_Roughn.png
-map_Bump Cilindro_low-bajo_Cilindro_material_Normal.png
+map_Kd Cilindro_low-bajo_Cilindro_material_BaseCo.jpg
+map_Ns Cilindro_low-bajo_Cilindro_material_Roughn.jpg
+map_Bump Cilindro_low-bajo_Cilindro_material_Normal.jpg
 
 newmtl lambert1
 Ns 200.000000
@@ -60,6 +60,6 @@ Ke 0.000000 0.000000 0.000000
 Ni 1.450000
 d 1.000000
 illum 2
-map_Kd ruleta_low_ruleta__BaseColor.png
-map_Ns ruleta_low_ruleta__Roughness.png
-map_Bump ruleta_low_ruleta__Normal.png
+map_Kd ruleta_low_ruleta__BaseColor.jpg
+map_Ns ruleta_low_ruleta__Roughness.jpg
+map_Bump ruleta_low_ruleta__Normal.jpg

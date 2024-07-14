@@ -10,7 +10,7 @@ d 1.000000
 illum 2
 map_Kd Diffuse_2.jpg
 map_Ns Roughness.jpg
-map_Bump Normal2.png
+map_Bump Normal2.jpg
 
 newmtl Material.001
 Ns 801.838806

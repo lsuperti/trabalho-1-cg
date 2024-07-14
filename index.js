@@ -313,7 +313,8 @@ async function main() {
     debugYellowSquare
   ]
 
-  
+  let animate = false;
+
   let cameraPositionOffset = [0, 0, 0];
   let mainObject = debugGlobalAxis;
   let zFarMultiplier = 1;
@@ -493,22 +494,26 @@ async function main() {
       mainObject = lampBody;
       cameraPositionOffset = [0, 0.35, 0.75];
       zFarMultiplier = 2;
+      animate = true
       break;
     case "objects":
       mainObject = windmill;
       cameraPositionOffset = [0, 0, 0];
+      animate = true;
       break;
     case "blueNoise":
       mainObject = debugPlane;
       cameraPositionOffset = [0, 5, -5];
       
       blueNoiseDemoPrng = new Math.seedrandom("blueNoiseDemo");
-      blueNoiseDemoPositions = blueNoise(blueNoiseDemoWidth, blueNoiseDemoHeight, blueNoiseDemoGridSpacing, blueNoiseDemoInnerCellSize, blueNoiseDemoCenter, blueNoiseDemoPrng);
+      blueNoiseDemoPositions = blueNoise(blueNoiseDemoWidth, blueNoiseDemoHeight, blueNoiseDemoGridSpacing, blueNoiseDemoGridSpacing, blueNoiseDemoInnerCellSize, blueNoiseDemoInnerCellSize, blueNoiseDemoCenter, blueNoiseDemoPrng);
+      animate = true;
       break;
     case "debugObjects":
       mainObject = debugPlane;
       overrideLookAt = true;
       cameraPositionOffset = [0.5, 1.5, 2];
+      animate = false;
       break;
     case "desk":
       mainObject = deskBar;
@@ -516,6 +521,7 @@ async function main() {
       overrideLookAt = true;
       lookAt = [0, 0.5, 0];
       zFarMultiplier = 2;
+      animate = true;
       break;
     case "biomes":
       mainObject = debugPlane;
@@ -523,11 +529,13 @@ async function main() {
 
       const biomesDemoPrng = new Math.seedrandom("biomesDemo");
       noiseDemoGenerator = createNoise2D(biomesDemoPrng);
+      animate = false;
       break;
     case "singleObject":
       mainObject = antiqueBookLarge;
       cameraPositionOffset = [0, 0.5, -0.1];
       zFarMultiplier = 2;
+      animate = true;
       break;
     case "final":
     default:
@@ -535,6 +543,7 @@ async function main() {
       lookAt = [0, 1, 0];
       cameraPositionOffset = [0, 2.5, 2];
       scene = generateProceduralScene(seed, params);
+      animate = false;
       break;
   }
 
@@ -644,7 +653,7 @@ async function main() {
 
         for (let i = -5; i < 5; i++) {
           for (let j = -5; j < 5; j++) {
-            const biome = generateBiome(i, j, numBiomes, noiseDemoGenerator, 10);
+            const biome = generateBiome(i, j, 4, noiseDemoGenerator, 10);
             renderObject(gl, meshProgramInfo, objects[biome], [i + 0.5, 0, j + 0.5]);
           }
         }
@@ -697,8 +706,9 @@ async function main() {
         break;
     }
 
-    // Uncomment to animate
-    //requestAnimationFrame(render);
+    if (animate) {
+      requestAnimationFrame(render);
+    }
   }
   
   loadingOverlay.style.display = "none";
