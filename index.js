@@ -2,23 +2,322 @@
 
 
 import { createNoise2D } from './node_modules/simplex-noise/dist/esm/simplex-noise.js';
-import { renderObject, parseAndLoadOBJ } from './importer.js';
+import { renderObject, importOBJ as importOBJ } from './importer.js';
 
-async function main() {
-  const loadingOverlay = document.getElementById("loading-overlay");
-  let sceneLoaded = false;
-  
-  function animateEllipsis() {
-    loadingOverlay.textContent = "Loading" + ".".repeat(ellipsisCount);
-    ellipsisCount = (ellipsisCount + 1) % 4;
-    if (!sceneLoaded) {
-      setTimeout(animateEllipsis, 200);
+let floor;
+let windmill;
+let chair;
+let demoDesk;
+let debugPlane;
+let debugAxis;
+let debugGlobalAxis;
+let debugArrow;
+let debugSquare;
+let debugCircle;
+let debugCube;
+let debugSphere;
+let blueNoiseOuterGridCell;
+let blueNoiseInnerGridCell;
+let debugCompassRose;
+let debugRedSquare;
+let debugGreenSquare;
+let debugBlueSquare;
+let debugYellowSquare;
+let lampBody;
+let lampHead;
+let debugLampHead;
+let antiqueLampBody;
+let antiqueLampHead;
+let antiqueLampDebugHead;
+let deskBar;
+let deskTopTile;
+let keys;
+let waterBottle;
+let notepad;
+let coffeeMugLarge;
+let coffeeMugEspresso;
+let memoBlock;
+let pencilHolder;
+let glasses;
+let clipboard;
+let smartphone;
+let drawingTablet;
+let charger;
+let headphones;
+let drone;
+let camera;
+let laptop;
+let hardDrive;
+let antiqueBookLarge;
+let antiqueBookSmall;
+let candleHolder;
+let goblet;
+let antiqueGlobe;
+let antiqueClockLarge;
+let antiqueClockSmall;
+let telephone;
+let teschinYazik;
+let cactus;
+let stoneTrophy;
+let woodMannequin;
+
+// Get A WebGL context
+/** @type {HTMLCanvasElement} */
+const canvas = document.querySelector("#canvas");
+const gl = canvas.getContext("webgl2");
+if (!gl) {
+  throw new Error("WebGL2 is not supported");
+}
+
+// Tell the twgl to match position with a_position etc..
+twgl.setAttributePrefix("a_");
+
+const vs = `#version 300 es
+in vec4 a_position;
+in vec3 a_normal;
+in vec3 a_tangent;
+in vec2 a_texcoord;
+in vec4 a_color;
+
+uniform mat4 u_projection;
+uniform mat4 u_view;
+uniform mat4 u_world;
+uniform vec3 u_viewWorldPosition;
+
+out vec3 v_normal;
+out vec3 v_tangent;
+out vec3 v_surfaceToView;
+out vec2 v_texcoord;
+out vec4 v_color;
+
+void main() {
+  vec4 worldPosition = u_world * a_position;
+  gl_Position = u_projection * u_view * worldPosition;
+  v_surfaceToView = u_viewWorldPosition - worldPosition.xyz;
+
+  mat3 normalMat = mat3(u_world);
+  v_normal = normalize(normalMat * a_normal);
+  v_tangent = normalize(normalMat * a_tangent);
+
+  v_texcoord = a_texcoord;
+  v_color = a_color;
+}
+`;
+
+const fs = `#version 300 es
+precision highp float;
+
+in vec3 v_normal;
+in vec3 v_tangent;
+in vec3 v_surfaceToView;
+in vec2 v_texcoord;
+in vec4 v_color;
+
+uniform vec3 diffuse;
+uniform sampler2D diffuseMap;
+uniform vec3 ambient;
+uniform vec3 emissive;
+uniform vec3 specular;
+uniform sampler2D specularMap;
+uniform float shininess;
+uniform sampler2D normalMap;
+uniform float opacity;
+uniform vec3 u_lightDirection;
+uniform vec3 u_ambientLight;
+
+out vec4 outColor;
+
+void main () {
+  vec3 normal = normalize(v_normal) * ( float( gl_FrontFacing ) * 2.0 - 1.0 );
+  vec3 tangent = normalize(v_tangent) * ( float( gl_FrontFacing ) * 2.0 - 1.0 );
+  vec3 bitangent = normalize(cross(normal, tangent));
+
+  mat3 tbn = mat3(tangent, bitangent, normal);
+  normal = texture(normalMap, v_texcoord).rgb * 2. - 1.;
+  normal = normalize(tbn * normal);
+
+  vec3 surfaceToViewDirection = normalize(v_surfaceToView);
+  vec3 halfVector = normalize(u_lightDirection + surfaceToViewDirection);
+
+  float fakeLight = dot(u_lightDirection, normal) * .5 + .5;
+  float specularLight = clamp(dot(normal, halfVector), 0.0, 1.0);
+  vec4 specularMapColor = texture(specularMap, v_texcoord);
+  vec3 effectiveSpecular = specular * specularMapColor.rgb;
+
+  vec4 diffuseMapColor = texture(diffuseMap, v_texcoord);
+  vec3 effectiveDiffuse = diffuse * diffuseMapColor.rgb * v_color.rgb;
+  float effectiveOpacity = opacity * diffuseMapColor.a * v_color.a;
+
+  outColor = vec4(
+      emissive +
+      ambient * u_ambientLight +
+      effectiveDiffuse * fakeLight +
+      effectiveSpecular * pow(specularLight, shininess),
+      effectiveOpacity);
+}
+`;
+
+// compiles and links the shaders, looks up attribute and uniform locations
+const meshProgramInfo = twgl.createProgramInfo(gl, [vs, fs]);
+
+async function loadObjects(callback) {
+  callback = callback || (() => {});
+
+  const objectPaths = [
+    // Scene objects
+    "./assets/floor/floor.obj",
+
+    // "objects" demo objects
+    "./assets/windmill/windmill.obj",
+    "./assets/chair/chair.obj",
+    "./assets/demoDesk/desk.obj",
+
+    // Debug objects
+    "./assets/debug/plane/debugPlane.obj",
+    "./assets/debug/axis/debugAxisV2.obj",
+    "./assets/debug/axis/debugGlobalAxis.obj",
+    "./assets/debug/arrow/debugArrow.obj",
+    "./assets/debug/square/debugSquare.obj",
+    "./assets/debug/circle/debugCircle.obj",
+    "./assets/debug/cube/debugCube.obj",
+    "./assets/debug/sphere/debugSphere.obj",
+    "./assets/debug/blueNoise/blueNoiseOuterGridCell.obj",
+    "./assets/debug/blueNoise/blueNoiseInnerGridCell.obj",
+    "./assets/debug/compassRose/debugCompassRose.obj",
+    "./assets/debug/areaSquare/red.obj",
+    "./assets/debug/areaSquare/green.obj",
+    "./assets/debug/areaSquare/blue.obj",
+    "./assets/debug/areaSquare/yellow.obj",
+
+    // Lamp objects
+    "./assets/lamp/body.obj",
+    "./assets/lamp/head.obj",
+    "./assets/lamp/debugHead.obj",
+    "./assets/antiqueLamp/body.obj",
+    "./assets/antiqueLamp/head.obj",
+    "./assets/antiqueLamp/debugHead.obj",
+
+    // Desk objects
+    "./assets/desk/bar.obj",
+    "./assets/desk/topTile.obj",
+
+    // Office biome objects
+    "./assets/keys/keys.obj",
+    "./assets/waterBottle/waterBottle.obj",
+    "./assets/notepad/notepad.obj",
+    "./assets/coffeeMug/large/large.obj",
+    "./assets/coffeeMug/espresso/espresso.obj",
+    "./assets/memoBlock/memoBlock.obj",
+    "./assets/pencilHolder/pencilHolder.obj",
+    "./assets/glasses/glasses.obj",
+    "./assets/clipboard/clipboard.obj",
+
+    // Gadgets biome objects
+    "./assets/smartphone/smartphone.obj",
+    "./assets/drawingTablet/drawingTablet.obj",
+    "./assets/charger/charger.obj",
+    "./assets/headphones/headphones.obj",
+    "./assets/drone/drone.obj",
+    "./assets/camera/camera.obj",
+    "./assets/laptop/laptop.obj",
+    "./assets/hardDrive/hardDrive.obj",
+
+    // Antique biome objects
+    "./assets/antiqueBook/large.obj",
+    "./assets/antiqueBook/small.obj",
+    "./assets/candleHolder/candleHolder.obj",
+    "./assets/goblet/goblet.obj",
+    "./assets/antiqueGlobe/antiqueGlobe.obj",
+    "./assets/antiqueClock/large.obj",
+    "./assets/antiqueClock/small.obj",
+    "./assets/telephone/telephone.obj",
+
+    // Decorations biome objects
+    "./assets/plants/teschinYazik.obj",
+    "./assets/plants/cactus.obj",
+    "./assets/stoneTrophy/stoneTrophy.obj",
+    "./assets/woodMannequin/woodMannequin.obj"
+  ];
+
+  let objectsToLoad = objectPaths.length;
+  //console.log("Total number of objects to load:", objectsToLoad);
+
+  function objectLoaded() {
+    objectsToLoad--;
+    if (objectsToLoad === 0) {
+      allObjectsLoaded();
     }
   }
 
-  let ellipsisCount = 0;
-  animateEllipsis();
-  
+  function allObjectsLoaded() {
+    callback();
+  }
+
+  const objectPromises = objectPaths.map(path => importOBJ(path, gl, meshProgramInfo, objectLoaded));
+
+  const objects = await Promise.all(objectPromises);
+
+  [
+    floor,
+    windmill,
+    chair,
+    demoDesk,
+    debugPlane,
+    debugAxis,
+    debugGlobalAxis,
+    debugArrow,
+    debugSquare,
+    debugCircle,
+    debugCube,
+    debugSphere,
+    blueNoiseOuterGridCell,
+    blueNoiseInnerGridCell,
+    debugCompassRose,
+    debugRedSquare,
+    debugGreenSquare,
+    debugBlueSquare,
+    debugYellowSquare,
+    lampBody,
+    lampHead,
+    debugLampHead,
+    antiqueLampBody,
+    antiqueLampHead,
+    antiqueLampDebugHead,
+    deskBar,
+    deskTopTile,
+    keys,
+    waterBottle,
+    notepad,
+    coffeeMugLarge,
+    coffeeMugEspresso,
+    memoBlock,
+    pencilHolder,
+    glasses,
+    clipboard,
+    smartphone,
+    drawingTablet,
+    charger,
+    headphones,
+    drone,
+    camera,
+    laptop,
+    hardDrive,
+    antiqueBookLarge,
+    antiqueBookSmall,
+    candleHolder,
+    goblet,
+    antiqueGlobe,
+    antiqueClockLarge,
+    antiqueClockSmall,
+    telephone,
+    teschinYazik,
+    cactus,
+    stoneTrophy,
+    woodMannequin
+  ] = objects;
+}
+
+async function main() {
   let seed = Math.random();
   let cameraLookAt = [0, 1, 0];
   let cameraPosition = [0, 2.5, 2];
@@ -86,183 +385,10 @@ async function main() {
   document.getElementById("biome-map").checked = defaultParams.renderBiomeMap;
   document.getElementById("major-objects").checked = defaultParams.renderMajorObjects;
   document.getElementById("minor-objects").checked = defaultParams.renderMinorObjects;
-  
-  // Get A WebGL context
-  /** @type {HTMLCanvasElement} */
-  const canvas = document.querySelector("#canvas");
-  const gl = canvas.getContext("webgl2");
-  if (!gl) {
-    return;
-  }
-
-  // Tell the twgl to match position with a_position etc..
-  twgl.setAttributePrefix("a_");
-
-  const vs = `#version 300 es
-  in vec4 a_position;
-  in vec3 a_normal;
-  in vec3 a_tangent;
-  in vec2 a_texcoord;
-  in vec4 a_color;
-
-  uniform mat4 u_projection;
-  uniform mat4 u_view;
-  uniform mat4 u_world;
-  uniform vec3 u_viewWorldPosition;
-
-  out vec3 v_normal;
-  out vec3 v_tangent;
-  out vec3 v_surfaceToView;
-  out vec2 v_texcoord;
-  out vec4 v_color;
-
-  void main() {
-    vec4 worldPosition = u_world * a_position;
-    gl_Position = u_projection * u_view * worldPosition;
-    v_surfaceToView = u_viewWorldPosition - worldPosition.xyz;
-
-    mat3 normalMat = mat3(u_world);
-    v_normal = normalize(normalMat * a_normal);
-    v_tangent = normalize(normalMat * a_tangent);
-
-    v_texcoord = a_texcoord;
-    v_color = a_color;
-  }
-  `;
-
-  const fs = `#version 300 es
-  precision highp float;
-
-  in vec3 v_normal;
-  in vec3 v_tangent;
-  in vec3 v_surfaceToView;
-  in vec2 v_texcoord;
-  in vec4 v_color;
-
-  uniform vec3 diffuse;
-  uniform sampler2D diffuseMap;
-  uniform vec3 ambient;
-  uniform vec3 emissive;
-  uniform vec3 specular;
-  uniform sampler2D specularMap;
-  uniform float shininess;
-  uniform sampler2D normalMap;
-  uniform float opacity;
-  uniform vec3 u_lightDirection;
-  uniform vec3 u_ambientLight;
-
-  out vec4 outColor;
-
-  void main () {
-    vec3 normal = normalize(v_normal) * ( float( gl_FrontFacing ) * 2.0 - 1.0 );
-    vec3 tangent = normalize(v_tangent) * ( float( gl_FrontFacing ) * 2.0 - 1.0 );
-    vec3 bitangent = normalize(cross(normal, tangent));
-
-    mat3 tbn = mat3(tangent, bitangent, normal);
-    normal = texture(normalMap, v_texcoord).rgb * 2. - 1.;
-    normal = normalize(tbn * normal);
-
-    vec3 surfaceToViewDirection = normalize(v_surfaceToView);
-    vec3 halfVector = normalize(u_lightDirection + surfaceToViewDirection);
-
-    float fakeLight = dot(u_lightDirection, normal) * .5 + .5;
-    float specularLight = clamp(dot(normal, halfVector), 0.0, 1.0);
-    vec4 specularMapColor = texture(specularMap, v_texcoord);
-    vec3 effectiveSpecular = specular * specularMapColor.rgb;
-
-    vec4 diffuseMapColor = texture(diffuseMap, v_texcoord);
-    vec3 effectiveDiffuse = diffuse * diffuseMapColor.rgb * v_color.rgb;
-    float effectiveOpacity = opacity * diffuseMapColor.a * v_color.a;
-
-    outColor = vec4(
-        emissive +
-        ambient * u_ambientLight +
-        effectiveDiffuse * fakeLight +
-        effectiveSpecular * pow(specularLight, shininess),
-        effectiveOpacity);
-  }
-  `;
-
-  // compiles and links the shaders, looks up attribute and uniform locations
-  const meshProgramInfo = twgl.createProgramInfo(gl, [vs, fs]);
 
   function degToRad(deg) {
     return deg * Math.PI / 180;
   }
-
-  // Scene objects
-  const floor = await parseAndLoadOBJ("./assets/floor/floor.obj", gl, meshProgramInfo);
-
-  // "objects" demo objects
-  const windmill = await parseAndLoadOBJ("./assets/windmill/windmill.obj", gl, meshProgramInfo);
-  const chair = await parseAndLoadOBJ("./assets/chair/chair.obj", gl, meshProgramInfo);
-  const demoDesk = await parseAndLoadOBJ("./assets/demoDesk/desk.obj", gl, meshProgramInfo);
-  
-  // Debug objects
-  const debugPlane = await parseAndLoadOBJ("./assets/debug/plane/debugPlane.obj", gl, meshProgramInfo);
-  const debugAxis = await parseAndLoadOBJ("./assets/debug/axis/debugAxisV2.obj", gl, meshProgramInfo);
-  const debugGlobalAxis = await parseAndLoadOBJ("./assets/debug/axis/debugGlobalAxis.obj", gl, meshProgramInfo);
-  const debugArrow = await parseAndLoadOBJ("./assets/debug/arrow/debugArrow.obj", gl, meshProgramInfo);
-  const debugSquare = await parseAndLoadOBJ("./assets/debug/square/debugSquare.obj", gl, meshProgramInfo);
-  const debugCircle = await parseAndLoadOBJ("./assets/debug/circle/debugCircle.obj", gl, meshProgramInfo);
-  const debugCube = await parseAndLoadOBJ("./assets/debug/cube/debugCube.obj", gl, meshProgramInfo);
-  const debugSphere = await parseAndLoadOBJ("./assets/debug/sphere/debugSphere.obj", gl, meshProgramInfo);
-  const blueNoiseOuterGridCell = await parseAndLoadOBJ("./assets/debug/blueNoise/blueNoiseOuterGridCell.obj", gl, meshProgramInfo);
-  const blueNoiseInnerGridCell = await parseAndLoadOBJ("./assets/debug/blueNoise/blueNoiseInnerGridCell.obj", gl, meshProgramInfo);
-  const debugCompassRose = await parseAndLoadOBJ("./assets/debug/compassRose/debugCompassRose.obj", gl, meshProgramInfo);
-  const debugRedSquare = await parseAndLoadOBJ("./assets/debug/areaSquare/red.obj", gl, meshProgramInfo);
-  const debugGreenSquare = await parseAndLoadOBJ("./assets/debug/areaSquare/green.obj", gl, meshProgramInfo);
-  const debugBlueSquare = await parseAndLoadOBJ("./assets/debug/areaSquare/blue.obj", gl, meshProgramInfo);
-  const debugYellowSquare = await parseAndLoadOBJ("./assets/debug/areaSquare/yellow.obj", gl, meshProgramInfo);
-  
-  // Lamp objects
-  const lampBody = await parseAndLoadOBJ("./assets/lamp/body.obj", gl, meshProgramInfo);
-  const lampHead = await parseAndLoadOBJ("./assets/lamp/head.obj", gl, meshProgramInfo);
-  const debugLampHead = await parseAndLoadOBJ("./assets/lamp/debugHead.obj", gl, meshProgramInfo);
-  const antiqueLampBody = await parseAndLoadOBJ("./assets/antiqueLamp/body.obj", gl, meshProgramInfo);
-  const antiqueLampHead = await parseAndLoadOBJ("./assets/antiqueLamp/head.obj", gl, meshProgramInfo);
-  const antiqueLampDebugHead = await parseAndLoadOBJ("./assets/antiqueLamp/debugHead.obj", gl, meshProgramInfo);
-
-  // Desk objects
-  const deskBar = await parseAndLoadOBJ("./assets/desk/bar.obj", gl, meshProgramInfo);
-  const deskTopTile = await parseAndLoadOBJ("./assets/desk/topTile.obj", gl, meshProgramInfo);
-
-  // Office biome objects
-  const keys = await parseAndLoadOBJ("./assets/keys/keys.obj", gl, meshProgramInfo);
-  const waterBottle = await parseAndLoadOBJ("./assets/waterBottle/waterBottle.obj", gl, meshProgramInfo);
-  const notepad = await parseAndLoadOBJ("./assets/notepad/notepad.obj", gl, meshProgramInfo);
-  const coffeeMugLarge = await parseAndLoadOBJ("./assets/coffeeMug/large/large.obj", gl, meshProgramInfo);
-  const coffeeMugEspresso = await parseAndLoadOBJ("./assets/coffeeMug/espresso/espresso.obj", gl, meshProgramInfo);
-  const memoBlock = await parseAndLoadOBJ("./assets/memoBlock/memoBlock.obj", gl, meshProgramInfo);
-  const pencilHolder = await parseAndLoadOBJ("./assets/pencilHolder/pencilHolder.obj", gl, meshProgramInfo);
-  const glasses = await parseAndLoadOBJ("./assets/glasses/glasses.obj", gl, meshProgramInfo);
-  const clipboard = await parseAndLoadOBJ("./assets/clipboard/clipboard.obj", gl, meshProgramInfo);
-
-  // Gadgets biome objects
-  const smartphone = await parseAndLoadOBJ("./assets/smartphone/smartphone.obj", gl, meshProgramInfo);
-  const drawingTablet = await parseAndLoadOBJ("./assets/drawingTablet/drawingTablet.obj", gl, meshProgramInfo);
-  const charger = await parseAndLoadOBJ("./assets/charger/charger.obj", gl, meshProgramInfo);
-  const headphones = await parseAndLoadOBJ("./assets/headphones/headphones.obj", gl, meshProgramInfo);
-  const drone = await parseAndLoadOBJ("./assets/drone/drone.obj", gl, meshProgramInfo);
-  const camera = await parseAndLoadOBJ("./assets/camera/camera.obj", gl, meshProgramInfo);
-  const laptop = await parseAndLoadOBJ("./assets/laptop/laptop.obj", gl, meshProgramInfo);
-  const hardDrive = await parseAndLoadOBJ("./assets/hardDrive/hardDrive.obj", gl, meshProgramInfo);
-
-  // Antique biome objects
-  const antiqueBookLarge = await parseAndLoadOBJ("./assets/antiqueBook/large.obj", gl, meshProgramInfo);
-  const antiqueBookSmall = await parseAndLoadOBJ("./assets/antiqueBook/small.obj", gl, meshProgramInfo);
-  const candleHolder = await parseAndLoadOBJ("./assets/candleHolder/candleHolder.obj", gl, meshProgramInfo);
-  const goblet = await parseAndLoadOBJ("./assets/goblet/goblet.obj", gl, meshProgramInfo);
-  const antiqueGlobe = await parseAndLoadOBJ("./assets/antiqueGlobe/antiqueGlobe.obj", gl, meshProgramInfo);
-  const antiqueClockLarge = await parseAndLoadOBJ("./assets/antiqueClock/large.obj", gl, meshProgramInfo);
-  const antiqueClockSmall = await parseAndLoadOBJ("./assets/antiqueClock/small.obj", gl, meshProgramInfo);
-  const telephone = await parseAndLoadOBJ("./assets/telephone/telephone.obj", gl, meshProgramInfo);
-
-  // Decorations biome objects
-  const teschinYazik = await parseAndLoadOBJ("./assets/plants/teschinYazik.obj", gl, meshProgramInfo);
-  const cactus = await parseAndLoadOBJ("./assets/plants/cactus.obj", gl, meshProgramInfo);
-  const stoneTrophy = await parseAndLoadOBJ("./assets/stoneTrophy/stoneTrophy.obj", gl, meshProgramInfo);  
-  const woodMannequin = await parseAndLoadOBJ("./assets/woodMannequin/woodMannequin.obj", gl, meshProgramInfo);
 
   const minorOffice = [
     { object: keys, needsLight: false, type: "generic", rotationRange: Math.PI * 2},
@@ -604,7 +730,7 @@ async function main() {
     default:
       fullCameraControl = true;
       scene = generateProceduralScene(seed, params);
-      animate = false;
+      animate = true;
       mainObject = floor;
       zNearDivisor = 10;
       break;
@@ -775,10 +901,6 @@ async function main() {
       requestAnimationFrame(render);
     }
   }
-  
-  canvas.style.backgroundColor = "#a2caf1";
-  loadingOverlay.style.display = "none";
-  sceneLoaded = true;
 
   requestAnimationFrame(render);
 
@@ -1124,4 +1246,24 @@ async function main() {
   }
 }
 
-main();
+const loadingOverlay = document.getElementById("loading-overlay");
+let sceneLoaded = false;
+
+function animateEllipsis() {
+  loadingOverlay.textContent = "Loading" + ".".repeat(ellipsisCount);
+  ellipsisCount = (ellipsisCount + 1) % 4;
+  if (!sceneLoaded) {
+    setTimeout(animateEllipsis, 200);
+  }
+}
+
+let ellipsisCount = 0;
+animateEllipsis();
+
+await loadObjects(() => {
+  main();
+  
+  canvas.style.backgroundColor = "#a2caf1";
+  loadingOverlay.style.display = "none";
+  sceneLoaded = true;
+});

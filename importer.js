@@ -279,7 +279,9 @@ function generateTangents(position, texcoord, indices) {
   return tangents;
 }
 
-export async function parseAndLoadOBJ(objHref, gl, meshProgramInfo) {
+export async function importOBJ(objHref, gl, meshProgramInfo, callback) {
+  callback = callback || (() => {});
+
   const response = await fetch(objHref);
   const text = await response.text();
   const obj = parseOBJ(text);
@@ -296,6 +298,35 @@ export async function parseAndLoadOBJ(objHref, gl, meshProgramInfo) {
     defaultNormal: twgl.createTexture(gl, { src: [127, 127, 255, 0] }),
   };
 
+  let texturesToLoad = 0;
+
+  function textureLoaded() {
+    texturesToLoad--;
+    if (texturesToLoad === 0) {
+      // all textures loaded
+      // we can now use the textures
+      allTexturesLoaded();
+    }
+  }
+
+  function allTexturesLoaded() {
+    callback();
+  }
+
+  // Get the number of textures that will be loaded
+  for (const material of Object.values(materials)) {
+    Object.entries(material)
+      .filter(([key]) => key.endsWith('Map'))
+      .forEach(([key, filename]) => {
+        texturesToLoad++;
+      });
+  }
+  
+  if (texturesToLoad === 0) {
+    // no textures to load
+    allTexturesLoaded();
+  }
+
   // load texture for materials
   for (const material of Object.values(materials)) {
     Object.entries(material)
@@ -304,8 +335,10 @@ export async function parseAndLoadOBJ(objHref, gl, meshProgramInfo) {
         let texture = textures[filename];
         if (!texture) {
           const textureHref = new URL(filename, baseHref).href;
-          texture = twgl.createTexture(gl, { src: textureHref, flipY: true });
+          texture = twgl.createTexture(gl, { src: textureHref, flipY: true }, textureLoaded);
           textures[filename] = texture;
+        } else {
+          textureLoaded();
         }
         material[key] = texture;
       });
