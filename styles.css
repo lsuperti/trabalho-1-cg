@@ -7,3 +7,32 @@ canvas {
   height: 100vh;
   display: block;
 }
+
+#loading-bar {
+  background-color: red;
+  width: 0%;
+  height: 1rem;
+  transition: width 0.1s ease; /* Smooth transition for width changes */
+}
+
+@keyframes pulse {
+  0% {
+    opacity: 0.5;
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0.5;
+  }
+}
+
+.loading-text {
+  animation: pulse 2s infinite ease-in-out;
+}
+
+.fade-out {
+  visibility: hidden;
+  opacity: 0;
+  transition: visibility 0s 0.5s, opacity 0.5s linear;
+}

@@ -160,8 +160,9 @@ void main () {
 // compiles and links the shaders, looks up attribute and uniform locations
 const meshProgramInfo = twgl.createProgramInfo(gl, [vs, fs]);
 
-async function loadObjects(callback) {
-  callback = callback || (() => {});
+async function loadObjects(objectLoadedCallback, allObjectsLoadedCallback) {
+  objectLoadedCallback = objectLoadedCallback || (() => {});
+  allObjectsLoadedCallback = allObjectsLoadedCallback || (() => {});
 
   const objectPaths = [
     // Scene objects
@@ -239,21 +240,20 @@ async function loadObjects(callback) {
     "./assets/woodMannequin/woodMannequin.obj"
   ];
 
-  let objectsToLoad = objectPaths.length;
-  //console.log("Total number of objects to load:", objectsToLoad);
+  const totalObjects = objectPaths.length;
+  let objectsToLoad = totalObjects;
 
-  function objectLoaded() {
+  function onObjectLoad() {
     objectsToLoad--;
+    
+    objectLoadedCallback(objectsToLoad, totalObjects);
+    
     if (objectsToLoad === 0) {
-      allObjectsLoaded();
+      allObjectsLoadedCallback();
     }
   }
 
-  function allObjectsLoaded() {
-    callback();
-  }
-
-  const objectPromises = objectPaths.map(path => importOBJ(path, gl, meshProgramInfo, objectLoaded));
+  const objectPromises = objectPaths.map(path => importOBJ(path, gl, meshProgramInfo, onObjectLoad));
 
   const objects = await Promise.all(objectPromises);
 
@@ -1247,23 +1247,31 @@ async function main() {
 }
 
 const loadingOverlay = document.getElementById("loading-overlay");
-let sceneLoaded = false;
+const loadingBar = document.getElementById("loading-bar");
 
-function animateEllipsis() {
-  loadingOverlay.textContent = "Loading" + ".".repeat(ellipsisCount);
-  ellipsisCount = (ellipsisCount + 1) % 4;
-  if (!sceneLoaded) {
-    setTimeout(animateEllipsis, 200);
-  }
+function updateLoadingBar(progress) {
+  loadingBar.style.width = progress * 100 + "%";
 }
 
-let ellipsisCount = 0;
-animateEllipsis();
+let timeOfLastProgressBarUpdate = undefined;
 
-await loadObjects(() => {
-  main();
-  
-  canvas.style.backgroundColor = "#a2caf1";
-  loadingOverlay.style.display = "none";
-  sceneLoaded = true;
-});
+await loadObjects(
+  // Update the loading bar when each object is loaded
+  (objectsToLoad, totalObjects) => {
+    if (timeOfLastProgressBarUpdate === undefined || Date.now() - timeOfLastProgressBarUpdate > 100) {
+      updateLoadingBar((totalObjects - objectsToLoad) / totalObjects);
+      timeOfLastProgressBarUpdate = Date.now();
+    }
+
+  },
+  // Begin the main program when all objects are loaded
+  () => {
+    updateLoadingBar(1.0);
+    main();
+    
+    // Set the canvas background color to the sky color, it is white when the loading screen is visible
+    canvas.style.backgroundColor = "#a2caf1";
+    // Fade out and hide the loading screen overlay
+    loadingOverlay.classList.add("fade-out");
+  }
+);
