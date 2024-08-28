@@ -130,6 +130,7 @@ uniform vec3 diffuse;
 uniform sampler2D diffuseMap;
 uniform vec3 ambient;
 uniform vec3 emissive;
+uniform sampler2D emissiveMap;
 uniform vec3 specular;
 uniform sampler2D specularMap;
 uniform float shininess;
@@ -213,6 +214,7 @@ void main() {
   float specularLight = clamp(dot(normal, halfVector), 0.0, 1.0);
   vec4 specularMapColor = texture(specularMap, v_texcoord);
   vec3 effectiveSpecular = specular * specularMapColor.rgb;
+  vec3 effectiveEmissive = emissive * texture(emissiveMap, v_texcoord).rgb;
 
   vec4 diffuseMapColor = texture(diffuseMap, v_texcoord);
   vec3 effectiveDiffuse = diffuse * diffuseMapColor.rgb * v_color.rgb;
@@ -247,11 +249,11 @@ void main() {
   const float minShadow = 0.25;
 
   outColor = vec4(
-      emissive +
+      effectiveEmissive +
       ambient * u_ambientLight +
       effectiveDiffuse * fakeLight * (minShadow + (shadowLight * (1.0 - minShadow))) +
       effectiveSpecular * pow(specularLight, shininess),
-      effectiveOpacity);      
+      effectiveOpacity);
 }
 
 `;
@@ -960,7 +962,7 @@ async function main() {
   switch (demo) {
     case "lamp":
       mainObject = lampBody;
-      cameraPositionOffset = [0, 0.35, 0.75];
+      cameraPositionOffset = [0, 1.5, 0.75];
       zFarMultiplier = 2;
       animate = true
       break;
@@ -968,6 +970,8 @@ async function main() {
       mainObject = windmill;
       cameraPositionOffset = [0, 0, 0];
       animate = true;
+      shadowType = 0;
+      document.getElementById("shadow-type").value = "none";
       break;
     case "blueNoise":
       mainObject = debugPlane;
@@ -976,11 +980,15 @@ async function main() {
       blueNoiseDemoPrng = new Math.seedrandom("blueNoiseDemo");
       blueNoiseDemoPositions = blueNoise(blueNoiseDemoWidth, blueNoiseDemoHeight, blueNoiseDemoGridSpacing, blueNoiseDemoGridSpacing, blueNoiseDemoInnerCellSize, blueNoiseDemoInnerCellSize, blueNoiseDemoCenter, blueNoiseDemoPrng);
       animate = true;
+
+      shadowType = 0;
+      document.getElementById("shadow-type").value = "none";
       break;
     case "debugObjects":
       mainObject = debugPlane;
       overrideLookAt = true;
-      cameraPositionOffset = [0.5, 1.5, 2];
+      cameraPositionOffset = [0.5, 2, 3];
+      cameraLookAt = [0, 0, 0];
       animate = false;
       break;
     case "desk":
@@ -998,10 +1006,12 @@ async function main() {
       const biomesDemoPrng = new Math.seedrandom("biomesDemo");
       noiseDemoGenerator = createNoise2D(biomesDemoPrng);
       animate = false;
+      shadowType = 0;
+      document.getElementById("shadow-type").value = "none";
       break;
     case "singleObject":
       mainObject = antiqueBookLarge;
-      cameraPositionOffset = [0, 0.5, -0.1];
+      cameraPositionOffset = [0, 1.25, 0.125];
       zFarMultiplier = 2;
       animate = true;
       break;
@@ -1172,11 +1182,13 @@ async function main() {
 
           break;
         case "lamp":
-          const lampPosition = [Math.cos(time) * 0.25, 0, Math.sin(time) * 0.25];
+          const lamp1Position = [Math.sin(time) * 0.25, 0, Math.cos(time) * 0.25];
+          const lamp2Position = [Math.sin(time + Math.PI) * 0.25, 0, Math.cos(time + Math.PI) * 0.25];
           const lampLookAtRotatedRelative = rotate2DVector([0, 0.25 * (Math.sin(time) + 2)], time);
-          const lampLookAt = [lampPosition[0] + lampLookAtRotatedRelative[0], lampPosition[1], lampPosition[2] + lampLookAtRotatedRelative[1]];
+          const lampLookAt = [lamp1Position[0] + lampLookAtRotatedRelative[0], lamp1Position[1], lamp1Position[2] + lampLookAtRotatedRelative[1]];
 
-          renderLampLookingAt(programInfo, lampPosition, lampLookAt, "antique", true);
+          renderLampLookingAt(programInfo, lamp1Position, lampLookAt, "antique", true);
+          renderLampLookingAt(programInfo, lamp2Position, lampLookAt, "default", true);
           renderObject(gl, programInfo, debugAxis, lampLookAt);
           renderObject(gl, programInfo, debugPlane, [0, 0, 0], [0, 0, 0], [0.25, 0.25, 0.25]);
 

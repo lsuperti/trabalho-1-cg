@@ -95,11 +95,14 @@ newmtl Screen
 Ns 769.781677
 Ka 1.000000 1.000000 1.000000
 Ks 0.500000 0.500000 0.500000
-Ke 0.000000 0.000000 0.000000
 Ni 1.450000
 d 1.000000
 illum 2
 map_Kd screen.jpg
+# Non-standard emission map
+map_Ke screen.jpg
+# This value will likely cause the entirety of the screen to be white if the non-standard emission map is not used
+Ke 1.000000 1.000000 1.000000
 
 newmtl Second
 Ns 250.000000
