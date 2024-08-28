@@ -72,7 +72,7 @@ if (!gl) {
 // Tell the twgl to match position with a_position etc..
 twgl.setAttributePrefix("a_");
 
-const vs = `#version 300 es
+const vs = /*glsl*/ `#version 300 es
 in vec4 a_position;
 in vec3 a_normal;
 in vec3 a_tangent;
@@ -82,36 +82,49 @@ in vec4 a_color;
 uniform mat4 u_projection;
 uniform mat4 u_view;
 uniform mat4 u_world;
+uniform mat4 u_textureMatrix;
 uniform vec3 u_viewWorldPosition;
 
 out vec3 v_normal;
 out vec3 v_tangent;
 out vec3 v_surfaceToView;
+
 out vec2 v_texcoord;
 out vec4 v_color;
+out vec4 v_projectedTexcoord;
 
 void main() {
+  // Multiply the position by the matrix.
   vec4 worldPosition = u_world * a_position;
+
   gl_Position = u_projection * u_view * worldPosition;
   v_surfaceToView = u_viewWorldPosition - worldPosition.xyz;
 
+  // orient the normals and pass to the fragment shader
   mat3 normalMat = mat3(u_world);
   v_normal = normalize(normalMat * a_normal);
   v_tangent = normalize(normalMat * a_tangent);
 
+  // Pass the texture coord to the fragment shader.
   v_texcoord = a_texcoord;
+  
+  // Pass the color to the fragment shader.
   v_color = a_color;
+  
+  v_projectedTexcoord = u_textureMatrix * worldPosition;
 }
 `;
 
-const fs = `#version 300 es
+const fs = /*glsl*/ `#version 300 es
 precision highp float;
 
+// Passed in from the vertex shader.
 in vec3 v_normal;
 in vec3 v_tangent;
 in vec3 v_surfaceToView;
 in vec2 v_texcoord;
 in vec4 v_color;
+in vec4 v_projectedTexcoord;
 
 uniform vec3 diffuse;
 uniform sampler2D diffuseMap;
@@ -124,13 +137,70 @@ uniform sampler2D normalMap;
 uniform float opacity;
 uniform vec3 u_lightDirection;
 uniform vec3 u_ambientLight;
+uniform vec4 u_colorMult;
+uniform sampler2D u_texture;
+uniform sampler2D u_projectedTexture;
+uniform float u_blurKernelRadius;
+uniform float u_sampling;
+uniform float u_bias;
+uniform vec3 u_reverseLightDirection;
+uniform int u_shadowType;
 
 out vec4 outColor;
 
-void main () {
+#define M_PI 3.1415926535897932384626433832795
+
+float hardShadow(bool inRange, float projectedDepth, vec3 projectedTexcoord, float currentDepth) {
+  float shadowLight = 0.0;
+  if (inRange) {
+    shadowLight = currentDepth > projectedDepth ? 0.0 : 1.0;
+  } else {
+    shadowLight = 1.0; // Set shadowLight to 1.0 outside of the light projection
+  }
+  return shadowLight;
+}
+
+float circlePcfShadow(bool inRange, float projectedDepth, vec3 projectedTexcoord, float currentDepth) {
+  float shadowLight = 0.0;
+  if (inRange) {
+    float angle = 2.0 * M_PI / u_sampling;
+    for (float i = 0.0; i < u_sampling; i++) {
+      vec2 offset = vec2(cos(i * angle), sin(i * angle)) * u_blurKernelRadius;
+      float sampleDepth = texture(u_projectedTexture, projectedTexcoord.xy + offset).r;
+      shadowLight += currentDepth > sampleDepth ? 0.0 : 1.0;
+    }
+    shadowLight /= u_sampling;
+  } else {
+    shadowLight = 1.0; // Set shadowLight to 1.0 outside of the light projection
+  }
+  return shadowLight;
+}
+
+float boxPcfShadowShadow(bool inRange, float projectedDepth, vec3 projectedTexcoord, float currentDepth) {
+  float shadowLight = 0.0;
+  if (inRange) {
+    for (float i = -u_sampling; i <= u_sampling; i++) {
+      for (float j = -u_sampling; j <= u_sampling; j++) {
+        vec2 offset = vec2(i, j) / u_sampling * u_blurKernelRadius;
+        float sampleDepth = texture(u_projectedTexture, projectedTexcoord.xy + offset).r;
+        shadowLight += currentDepth > sampleDepth ? 0.0 : 1.0;
+      }
+    }
+
+    shadowLight /= (2.0 * u_sampling + 1.0) * (2.0 * u_sampling + 1.0);
+  } else {
+    shadowLight = 1.0; // Set shadowLight to 1.0 outside of the light projection
+  }
+  return shadowLight;
+}
+
+void main() {
   vec3 normal = normalize(v_normal) * ( float( gl_FrontFacing ) * 2.0 - 1.0 );
   vec3 tangent = normalize(v_tangent) * ( float( gl_FrontFacing ) * 2.0 - 1.0 );
   vec3 bitangent = normalize(cross(normal, tangent));
+
+  vec3 projectedTexcoord = v_projectedTexcoord.xyz / v_projectedTexcoord.w;
+  float currentDepth = projectedTexcoord.z + u_bias;
 
   mat3 tbn = mat3(tangent, bitangent, normal);
   normal = texture(normalMap, v_texcoord).rgb * 2. - 1.;
@@ -148,17 +218,105 @@ void main () {
   vec3 effectiveDiffuse = diffuse * diffuseMapColor.rgb * v_color.rgb;
   float effectiveOpacity = opacity * diffuseMapColor.a * v_color.a;
 
+  bool inRange =
+      projectedTexcoord.x >= 0.0 &&
+      projectedTexcoord.x <= 1.0 &&
+      projectedTexcoord.y >= 0.0 &&
+      projectedTexcoord.y <= 1.0;
+
+  // the 'r' channel has the depth values
+  float projectedDepth = texture(u_projectedTexture, projectedTexcoord.xy).r;
+
+  float shadowLight;
+
+  switch (u_shadowType) {
+    case 1:
+      shadowLight = hardShadow(inRange, projectedDepth, projectedTexcoord, currentDepth);
+      break;
+    case 2:
+      shadowLight = circlePcfShadow(inRange, projectedDepth, projectedTexcoord, currentDepth);
+      break;
+    case 3:
+      shadowLight = boxPcfShadowShadow(inRange, projectedDepth, projectedTexcoord, currentDepth);
+      break;
+    default:
+      // no shadow
+      shadowLight = 1.0;
+  }
+
+  const float minShadow = 0.25;
+
   outColor = vec4(
       emissive +
       ambient * u_ambientLight +
-      effectiveDiffuse * fakeLight +
+      effectiveDiffuse * fakeLight * (minShadow + (shadowLight * (1.0 - minShadow))) +
       effectiveSpecular * pow(specularLight, shininess),
-      effectiveOpacity);
+      effectiveOpacity);      
+}
+
+`;
+
+const colorVS = /*glsl*/ `#version 300 es
+in vec4 a_position;
+
+uniform mat4 u_projection;
+uniform mat4 u_view;
+uniform mat4 u_world;
+
+void main() {
+  // Multiply the position by the matrices.
+  gl_Position = u_projection * u_view * u_world * a_position;
 }
 `;
 
-// compiles and links the shaders, looks up attribute and uniform locations
-const meshProgramInfo = twgl.createProgramInfo(gl, [vs, fs]);
+const colorFS = /*glsl*/ `#version 300 es
+precision highp float;
+
+uniform vec4 u_color;
+
+out vec4 outColor;
+
+void main() {
+  outColor = u_color;
+}
+`;
+
+// setup GLSL programs
+// note: Since we're going to use the same VAO with multiple
+// shader programs we need to make sure all programs use the
+// same attribute locations. There are 2 ways to do that.
+// (1) assign them in GLSL. (2) assign them by calling `gl.bindAttribLocation`
+// before linking. We're using method 2 as it's more. D.R.Y.
+const programOptions = {
+  attribLocations: {
+    'a_position': 0,
+    'a_normal':   1,
+    'a_texcoord': 2,
+    'a_color':    3,
+  },
+};
+const meshProgramInfo = twgl.createProgramInfo(gl, [vs, fs], programOptions);
+const colorProgramInfo = twgl.createProgramInfo(gl, [colorVS, colorFS], programOptions);
+
+function createDepthTexture(depthTextureSize) {
+  const depthTexture = gl.createTexture();
+  gl.bindTexture(gl.TEXTURE_2D, depthTexture);
+  gl.texImage2D(
+    gl.TEXTURE_2D, // target
+    0, // mip level
+    gl.DEPTH_COMPONENT32F, // internal format
+    depthTextureSize, // width
+    depthTextureSize, // height
+    0, // border
+    gl.DEPTH_COMPONENT, // format
+    gl.FLOAT, // type
+    null); // data
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+  return depthTexture;
+}
 
 async function loadObjects(objectLoadedCallback, allObjectsLoadedCallback) {
   objectLoadedCallback = objectLoadedCallback || (() => {});
@@ -321,6 +479,17 @@ async function main() {
   let seed = Math.random();
   let cameraLookAt = [0, 1, 0];
   let cameraPosition = [0, 2.5, 2];
+  let lightPosition = [2, 2, -1];
+  let lightTarget = [0, 0.5, 0];
+  let shadowType = 2;
+  let shadowBlurKernelRadius = 0.01;
+  let shadowBlurSampling = 3;
+  let lightProjWidth = 3;
+  let lightProjHeight = 2;
+  let lightPerspective = true;
+  let lightFieldOfView = 60;
+  let shadowBias = -0.006;
+  let depthTextureSize = 1024;
 
   const defaultParams = {
     deskWidth: 2.5,
@@ -377,6 +546,21 @@ async function main() {
   document.getElementById("gadgets-biome").checked = defaultParams.gadgetsBiome
   document.getElementById("antiques-biome").checked = defaultParams.antiquesBiome
   document.getElementById("decorations-biome").checked = defaultParams.decorationsBiome
+  document.getElementById("light-x").value = lightPosition[0];
+  document.getElementById("light-y").value = lightPosition[1];
+  document.getElementById("light-z").value = lightPosition[2];
+  document.getElementById("light-target-x").value = lightTarget[0];
+  document.getElementById("light-target-y").value = lightTarget[1];
+  document.getElementById("light-target-z").value = lightTarget[2];
+  document.getElementById("shadow-type").value = "circle-pcf";
+  document.getElementById("shadow-blur-kernel").value = shadowBlurKernelRadius;
+  document.getElementById("shadow-sampling").value = shadowBlurSampling;
+  document.getElementById("light-proj-width").value = lightProjWidth;
+  document.getElementById("light-proj-height").value = lightProjHeight;
+  document.getElementById("light-perspective").checked = lightPerspective;
+  document.getElementById("light-fov").value = lightFieldOfView;
+  document.getElementById("shadow-bias").value = shadowBias;
+  document.getElementById("depth-texture-size").value = depthTextureSize;
   document.getElementById("render-debug-objects").checked = renderDebugObjects;
   document.getElementById("world-axis").checked = renderWorldAxis;
   document.getElementById("lamp-debug").checked = useLampDebugHead;
@@ -627,6 +811,95 @@ async function main() {
     scene = generateProceduralScene(seed, params);
     requestAnimationFrame(render);
   });
+
+  document.getElementById("light-x").addEventListener("input", function() {
+    lightPosition[0] = parseFloat(this.value);
+    requestAnimationFrame(render);
+  });
+  
+  document.getElementById("light-y").addEventListener("input", function() {
+    lightPosition[1] = parseFloat(this.value);
+    requestAnimationFrame(render);
+  });
+  
+  document.getElementById("light-z").addEventListener("input", function() {
+    lightPosition[2] = parseFloat(this.value);
+    requestAnimationFrame(render);
+  });
+  
+  document.getElementById("light-target-x").addEventListener("input", function() {
+    lightTarget[0] = parseFloat(this.value);
+    requestAnimationFrame(render);
+  });
+  
+  document.getElementById("light-target-y").addEventListener("input", function() {
+    lightTarget[1] = parseFloat(this.value);
+    requestAnimationFrame(render);
+  });
+  
+  document.getElementById("light-target-z").addEventListener("input", function() {
+    lightTarget[2] = parseFloat(this.value);
+    requestAnimationFrame(render);
+  });
+
+  document.getElementById("shadow-type").addEventListener("input", function() {
+    switch (this.value) {
+      case "hard":
+        shadowType = 1;
+        break;
+      case "circle-pcf":
+        shadowType = 2;
+        break;
+      case "box-pcf":
+        shadowType = 3;
+        break;
+      default:
+        shadowType = 0;
+    }
+    requestAnimationFrame(render);
+  });
+
+  document.getElementById("shadow-blur-kernel").addEventListener("input", function() {
+    shadowBlurKernelRadius = parseFloat(this.value);
+    requestAnimationFrame(render);
+  });
+
+  document.getElementById("shadow-sampling").addEventListener("input", function() {
+    shadowBlurSampling = parseInt(this.value);
+    requestAnimationFrame(render);
+  });
+
+  document.getElementById("light-proj-width").addEventListener("input", function() {
+    lightProjWidth = parseFloat(this.value);
+    requestAnimationFrame(render);
+  });
+  
+  document.getElementById("light-proj-height").addEventListener("input", function() {
+    lightProjHeight = parseFloat(this.value);
+    requestAnimationFrame(render);
+  });
+
+  document.getElementById("light-perspective").addEventListener("input", function() {
+    lightPerspective = this.checked;
+    requestAnimationFrame(render);
+  });
+
+  document.getElementById("light-fov").addEventListener("input", function() {
+    lightFieldOfView = parseFloat(this.value);
+    requestAnimationFrame(render);
+  });
+  
+  document.getElementById("shadow-bias").addEventListener("input", function() {
+    shadowBias = parseFloat(this.value);
+    requestAnimationFrame(render);
+  });
+
+  document.getElementById("depth-texture-size").addEventListener("input", function() {
+    depthTextureSize = parseInt(this.value);
+    depthTexture = createDepthTexture(depthTextureSize);
+    depthFramebuffer = createDepthFramebuffer();
+    requestAnimationFrame(render);
+  });
   
   document.getElementById("render-debug-objects").addEventListener("input", function() {
     renderDebugObjects = this.checked;
@@ -675,6 +948,12 @@ async function main() {
     scene = generateProceduralScene(seed, params);
     requestAnimationFrame(render);
   });
+
+  // Create a depth texture
+  let depthTexture = createDepthTexture(depthTextureSize);
+
+  // Create a framebuffer
+  let depthFramebuffer = createDepthFramebuffer();
 
   const demo = "final"; // "objects", "lamp", "blueNoise", "debugObjects", "desk", "biomes", "singleObject", "final"
 
@@ -730,13 +1009,25 @@ async function main() {
     default:
       fullCameraControl = true;
       scene = generateProceduralScene(seed, params);
-      animate = true;
+      animate = false;
       mainObject = floor;
       zNearDivisor = 10;
       break;
   }
 
   let then = 0;
+
+  function createDepthFramebuffer() {
+    const depthFramebuffer = gl.createFramebuffer();
+    gl.bindFramebuffer(gl.FRAMEBUFFER, depthFramebuffer);
+    gl.framebufferTexture2D(
+      gl.FRAMEBUFFER, // target
+      gl.DEPTH_ATTACHMENT, // attachment point
+      gl.TEXTURE_2D, // texture target
+      depthTexture, // texture
+      0); // mip level
+    return depthFramebuffer;
+  }
 
   function render(time) {   
     time *= 0.001;  // convert to seconds
@@ -763,142 +1054,230 @@ async function main() {
       camera = twgl.m4.lookAt(cameraPositionOffset, cameraLookAt, up);
     }
 
-    // Make a view matrix from the camera matrix.
-    const view = twgl.m4.inverse(camera);
+    const lightWorldMatrix = twgl.m4.lookAt(
+      lightPosition,
+      lightTarget,
+      up
+    );
 
-    const sharedUniforms = {
-      u_lightDirection: twgl.v3.normalize([-1, 3, 5]),
-      u_view: view,
-      u_projection: projection,
-      u_viewWorldPosition: mainObject.cameraPosition,
-    };
+    const lightProjectionMatrix = lightPerspective
+      ? twgl.m4.perspective(
+          degToRad(lightFieldOfView),
+          lightProjWidth / lightProjHeight,
+          0.5,  // near
+          10)   // far
+      : twgl.m4.ortho(
+          -lightProjWidth / 2,    // left
+            lightProjWidth / 2,   // right
+          -lightProjHeight / 2,   // bottom
+            lightProjHeight / 2,  // top
+            0.5,                  // near
+            10);                  // far
 
-    gl.useProgram(meshProgramInfo.program);
+    // draw to the depth texture
+    gl.bindFramebuffer(gl.FRAMEBUFFER, depthFramebuffer);
+    gl.viewport(0, 0, depthTextureSize, depthTextureSize);
+    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
-    // calls gl.uniform
-    twgl.setUniforms(meshProgramInfo, sharedUniforms);
+    drawScene(
+      lightProjectionMatrix,
+      lightWorldMatrix,
+      twgl.m4.identity(),
+      lightWorldMatrix,
+      colorProgramInfo
+    );
 
-    switch (demo) {
-      case "objects":
-        const scale1 = Math.sin(time) / 2 + 1;
-        const scale2 = Math.sin(time + Math.PI / 2) / 2 + 1;
-        const scale3 = Math.sin(time + Math.PI) / 2 + 1;
+    // now draw scene to the canvas projecting the depth texture into the scene
+    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+    gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
+    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
-        renderObject(gl, meshProgramInfo, windmill, [-5 + Math.sin(time) * 3.5, -3 + Math.sin(time) * 3.5, 0 + Math.sin(time) * 3.5], [time + Math.PI, time + Math.PI, time + Math.PI], [scale1, scale1, scale1]);
-        renderObject(gl, meshProgramInfo, chair, [5 + Math.sin(time + Math.PI) * 3.5, -3 + Math.sin(time + Math.PI) * 3.5, 0 + Math.sin(time + Math.PI) * 3.5], [time, time, time], [scale2, scale2, scale2]);
-        renderObject(gl, meshProgramInfo, demoDesk, [Math.sin(time + Math.PI / 2) * 3.5, -3 + Math.sin(time + Math.PI / 2) * 3.5, Math.sin(time + Math.PI / 2) * 3.5], [time + Math.PI / 2, time + Math.PI / 2, time + Math.PI / 2], [scale3 * 5, scale3 * 5, scale3 * 5]);
-        
-        break;
-      case "lamp":
-        const lampPosition = [Math.cos(time) * 0.25, 0, Math.sin(time) * 0.25];
-        const lampLookAtRotatedRelative = rotate2DVector([0, 0.25 * (Math.sin(time) + 2)], time);
-        const lampLookAt = [lampPosition[0] + lampLookAtRotatedRelative[0], lampPosition[1], lampPosition[2] + lampLookAtRotatedRelative[1]];
+    let textureMatrix = twgl.m4.identity();
+    textureMatrix = twgl.m4.translate(textureMatrix, [0.5, 0.5, 0.5]);
+    textureMatrix = twgl.m4.scale(textureMatrix, [0.5, 0.5, 0.5]);
+    textureMatrix = twgl.m4.multiply(textureMatrix, lightProjectionMatrix);
+    // use the inverse of this world matrix to make
+    // a matrix that will transform other positions
+    // to be relative this this world space.
+    textureMatrix = twgl.m4.multiply(textureMatrix, twgl.m4.inverse(lightWorldMatrix));
 
-        renderLampLookingAt(lampPosition, lampLookAt, "antique", true);
-        renderObject(gl, meshProgramInfo, debugAxis, lampLookAt);
-        renderObject(gl, meshProgramInfo, debugPlane, [0, 0, 0], [0, 0, 0], [0.25, 0.25, 0.25]);
-        
-        break;
-      case "blueNoise":
-        if (timeSinceLastBlueNoiseReset > 1) {
-          timeSinceLastBlueNoiseReset = 0;
-          
-          blueNoiseDemoPositions = blueNoise(blueNoiseDemoWidth, blueNoiseDemoHeight, blueNoiseDemoGridSpacing, blueNoiseDemoGridSpacing, blueNoiseDemoInnerCellSize, blueNoiseDemoInnerCellSize, blueNoiseDemoCenter, blueNoiseDemoPrng);
-        } else {
-          timeSinceLastBlueNoiseReset += deltaTime;
-        }
+    const projectionMatrix = twgl.m4.perspective(fieldOfViewRadians, aspect, 1, 2000);
 
-        for (const position of blueNoiseDemoPositions) {
-          renderObject(gl, meshProgramInfo, debugAxis, [position[0][0], 0, position[0][1]], [0, 0, 0], [2, 2 , 2]);
-          renderObject(gl, meshProgramInfo, blueNoiseOuterGridCell,  [position[1][0], 0, position[1][1]], [0, 0, 0], [blueNoiseDemoGridSpacing, blueNoiseDemoGridSpacing, blueNoiseDemoGridSpacing]);
-          renderObject(gl, meshProgramInfo, blueNoiseInnerGridCell,  [position[1][0], 0, position[1][1]], [0, 0, 0], [blueNoiseDemoInnerCellSize, blueNoiseDemoInnerCellSize, blueNoiseDemoInnerCellSize]);
-        }
+    //drawFrustum(camera, gl, colorProgramInfo, lightWorldMatrix, lightProjectionMatrix, projection);
 
-        renderObject(gl, meshProgramInfo, debugPlane);
-        
-        break;
-      case "debugObjects":
-        renderObject(gl, meshProgramInfo, debugAxis, [0.5, 0.5, -0.5], [0, 0, 0], [2, 2, 2]);
-        renderObject(gl, meshProgramInfo, debugArrow, [-0.75, 0.3, 0], [0.7, 0.4, -0.7], [0.75, 0.75, 0.75]);
-        renderObject(gl, meshProgramInfo, debugPlane);
-        renderObject(gl, meshProgramInfo, debugGlobalAxis);
-        renderObject(gl, meshProgramInfo, debugSquare, [-0.5, 0, 0.5], [0, 0, 0], [0.5, 0.5, 0.5]);
-        renderObject(gl, meshProgramInfo, debugCube, [0.5, 0.25, 0.5], [0, 0, 0], [0.5, 0.5, 0.5]);
-        renderObject(gl, meshProgramInfo, debugCircle, [-0.5, 0, -0.5], [0, 0, 0], [0.25, 0.25, 0.25]);
-        renderObject(gl, meshProgramInfo, debugSphere, [1, 0.75, -0.5], [0, 0, 0], [0.25, 0.25, 0.25]);
-        renderObject(gl, meshProgramInfo, debugCompassRose, [1, 0, -1], [0, 0, 0], [0.5, 0.5, 0.5]);
-        
-        break;
-      case "desk":
-        let deskPosition = [0, 0, 0];
-        let deskWidth = 2 + Math.sin(time);
-        let deskHeight = 1 + Math.sin(time) / 2;
-        let deskDepth = 1 + Math.cos(time) + 0.5;
-      
-        renderDesk(deskWidth, deskHeight, deskDepth, deskPosition);
-        renderObject(gl, meshProgramInfo, debugPlane);
-
-        break;
-      case "biomes":
-        const objects = [debugRedSquare, debugGreenSquare, debugBlueSquare, debugYellowSquare];
-
-        for (let i = -5; i < 5; i++) {
-          for (let j = -5; j < 5; j++) {
-            const biome = generateBiome(i, j, 4, noiseDemoGenerator, 10);
-            renderObject(gl, meshProgramInfo, objects[biome], [i + 0.5, 0, j + 0.5]);
-          }
-        }
-
-        break;
-      case "singleObject":
-        renderObject(gl, meshProgramInfo, mainObject, [0, 0, 0], [0, time, 0]);
-        renderObject(gl, meshProgramInfo, debugPlane);
-        break;
-      case "final":
-      default:
-        const center = [0, 0, 0];
-
-        if (renderDebugObjects && renderWorldAxis) {
-          renderObject(gl, meshProgramInfo, debugGlobalAxis);
-        }
-
-        // Desk        
-        renderDesk(params.deskWidth, params.deskHeight, params.deskDepth, center, renderDeskLegs, renderDeskTop);
-        // Floor
-        renderObject(gl, meshProgramInfo, floor, center);
-        
-        // Debug objects
-        if (renderDebugObjects) {
-          for (const object of scene.debugObjects) {
-            renderObject(gl, meshProgramInfo, object.object, twgl.v3.add(object.position, center), object.rotation, object.scale);
-          }
-        }
-
-        // Major objects
-        if (params.renderMajorObjects) {
-          for (const object of scene.majorObjects) {
-            renderObject(gl, meshProgramInfo, object.object, twgl.v3.add(object.position, center), object.rotation, object.scale);
-          }
-        }
-        
-        // Minor objects
-        if (params.renderMinorObjects) {
-          // Generic objects
-          for (const object of scene.minorObjects) {
-            renderObject(gl, meshProgramInfo, object.object, twgl.v3.add(object.position, center), object.rotation, object.scale);
-          }
-        
-          // Lamps
-          for (const lamp of scene.lamps) {
-            renderLampLookingAt(twgl.v3.add(lamp.position, center), twgl.v3.add(lamp.lookAt, center), lamp.type, renderDebugObjects && useLampDebugHead && lamp.lookingAtObject);
-          }
-        }
-        
-        break;
-    }
+    drawScene(
+      projectionMatrix,
+      camera,
+      textureMatrix,
+      lightWorldMatrix,
+      meshProgramInfo
+    );
 
     if (animate) {
       requestAnimationFrame(render);
+    }
+
+    function drawScene(
+      projectionMatrix,
+      cameraMatrix,
+      textureMatrix,
+      lightWorldMatrix,
+      programInfo) {
+    // Make a view matrix from the camera matrix.
+    const viewMatrix = twgl.m4.inverse(cameraMatrix);
+
+    gl.useProgram(programInfo.program);
+
+    let blurSamplingValue = 0;
+
+    switch (shadowType) {
+      case 2:
+        blurSamplingValue = Math.pow(2, shadowBlurSampling + 2);
+        break;
+      case 3:
+        blurSamplingValue = shadowBlurSampling - 1;
+        break;
+    }
+
+    // set uniforms that are the same for both the sphere and plane
+    // note: any values with no corresponding uniform in the shader
+    // are ignored.
+    twgl.setUniforms(programInfo, {
+      u_lightDirection: twgl.v3.normalize(twgl.v3.subtract(lightPosition, lightTarget)),
+      u_view: viewMatrix,
+      u_projection: projectionMatrix,
+      u_viewWorldPosition: mainObject.cameraPosition,
+      u_bias: shadowBias,
+      u_blurKernelRadius: shadowBlurKernelRadius,
+      u_sampling: blurSamplingValue,
+      u_textureMatrix: textureMatrix,
+      u_projectedTexture: depthTexture,
+      u_reverseLightDirection: lightWorldMatrix.slice(8, 11),
+      u_shadowType: shadowType,
+    });
+
+    drawObjects(programInfo);
+  }
+
+    function drawObjects(programInfo) {
+      switch (demo) {
+        case "objects":
+          const scale1 = Math.sin(time) / 2 + 1;
+          const scale2 = Math.sin(time + Math.PI / 2) / 2 + 1;
+          const scale3 = Math.sin(time + Math.PI) / 2 + 1;
+
+          renderObject(gl, programInfo, windmill, [-5 + Math.sin(time) * 3.5, -3 + Math.sin(time) * 3.5, 0 + Math.sin(time) * 3.5], [time + Math.PI, time + Math.PI, time + Math.PI], [scale1, scale1, scale1]);
+          renderObject(gl, programInfo, chair, [5 + Math.sin(time + Math.PI) * 3.5, -3 + Math.sin(time + Math.PI) * 3.5, 0 + Math.sin(time + Math.PI) * 3.5], [time, time, time], [scale2, scale2, scale2]);
+          renderObject(gl, programInfo, demoDesk, [Math.sin(time + Math.PI / 2) * 3.5, -3 + Math.sin(time + Math.PI / 2) * 3.5, Math.sin(time + Math.PI / 2) * 3.5], [time + Math.PI / 2, time + Math.PI / 2, time + Math.PI / 2], [scale3 * 5, scale3 * 5, scale3 * 5]);
+
+          break;
+        case "lamp":
+          const lampPosition = [Math.cos(time) * 0.25, 0, Math.sin(time) * 0.25];
+          const lampLookAtRotatedRelative = rotate2DVector([0, 0.25 * (Math.sin(time) + 2)], time);
+          const lampLookAt = [lampPosition[0] + lampLookAtRotatedRelative[0], lampPosition[1], lampPosition[2] + lampLookAtRotatedRelative[1]];
+
+          renderLampLookingAt(programInfo, lampPosition, lampLookAt, "antique", true);
+          renderObject(gl, programInfo, debugAxis, lampLookAt);
+          renderObject(gl, programInfo, debugPlane, [0, 0, 0], [0, 0, 0], [0.25, 0.25, 0.25]);
+
+          break;
+        case "blueNoise":
+          if (timeSinceLastBlueNoiseReset > 1) {
+            timeSinceLastBlueNoiseReset = 0;
+
+            blueNoiseDemoPositions = blueNoise(blueNoiseDemoWidth, blueNoiseDemoHeight, blueNoiseDemoGridSpacing, blueNoiseDemoGridSpacing, blueNoiseDemoInnerCellSize, blueNoiseDemoInnerCellSize, blueNoiseDemoCenter, blueNoiseDemoPrng);
+          } else {
+            timeSinceLastBlueNoiseReset += deltaTime;
+          }
+
+          for (const position of blueNoiseDemoPositions) {
+            renderObject(gl, programInfo, debugAxis, [position[0][0], 0, position[0][1]], [0, 0, 0], [2, 2, 2]);
+            renderObject(gl, programInfo, blueNoiseOuterGridCell, [position[1][0], 0, position[1][1]], [0, 0, 0], [blueNoiseDemoGridSpacing, blueNoiseDemoGridSpacing, blueNoiseDemoGridSpacing]);
+            renderObject(gl, programInfo, blueNoiseInnerGridCell, [position[1][0], 0, position[1][1]], [0, 0, 0], [blueNoiseDemoInnerCellSize, blueNoiseDemoInnerCellSize, blueNoiseDemoInnerCellSize]);
+          }
+
+          renderObject(gl, programInfo, debugPlane);
+
+          break;
+        case "debugObjects":
+          renderObject(gl, programInfo, debugAxis, [0.5, 0.5, -0.5], [0, 0, 0], [2, 2, 2]);
+          renderObject(gl, programInfo, debugArrow, [-0.75, 0.3, 0], [0.7, 0.4, -0.7], [0.75, 0.75, 0.75]);
+          renderObject(gl, programInfo, debugPlane);
+          renderObject(gl, programInfo, debugGlobalAxis);
+          renderObject(gl, programInfo, debugSquare, [-0.5, 0, 0.5], [0, 0, 0], [0.5, 0.5, 0.5]);
+          renderObject(gl, programInfo, debugCube, [0.5, 0.25, 0.5], [0, 0, 0], [0.5, 0.5, 0.5]);
+          renderObject(gl, programInfo, debugCircle, [-0.5, 0, -0.5], [0, 0, 0], [0.25, 0.25, 0.25]);
+          renderObject(gl, programInfo, debugSphere, [1, 0.75, -0.5], [0, 0, 0], [0.25, 0.25, 0.25]);
+          renderObject(gl, programInfo, debugCompassRose, [1, 0, -1], [0, 0, 0], [0.5, 0.5, 0.5]);
+
+          break;
+        case "desk":
+          let deskPosition = [0, 0, 0];
+          let deskWidth = 2 + Math.sin(time);
+          let deskHeight = 1 + Math.sin(time) / 2;
+          let deskDepth = 1 + Math.cos(time) + 0.5;
+
+          renderDesk(programInfo, deskWidth, deskHeight, deskDepth, deskPosition);
+          renderObject(gl, programInfo, debugPlane);
+
+          break;
+        case "biomes":
+          const objects = [debugRedSquare, debugGreenSquare, debugBlueSquare, debugYellowSquare];
+
+          for (let i = -5; i < 5; i++) {
+            for (let j = -5; j < 5; j++) {
+              const biome = generateBiome(i, j, 4, noiseDemoGenerator, 10);
+              renderObject(gl, programInfo, objects[biome], [i + 0.5, 0, j + 0.5]);
+            }
+          }
+
+          break;
+        case "singleObject":
+          renderObject(gl, programInfo, mainObject, [0, 0, 0], [0, time, 0]);
+          renderObject(gl, programInfo, debugPlane);
+          break;
+        case "final":
+        default:
+          const center = [0, 0, 0];
+
+          if (renderDebugObjects && renderWorldAxis) {
+            renderObject(gl, programInfo, debugGlobalAxis);
+          }
+
+          // Desk        
+          renderDesk(programInfo, params.deskWidth, params.deskHeight, params.deskDepth, center, renderDeskLegs, renderDeskTop);
+          // Floor
+          renderObject(gl, programInfo, floor, center);
+
+          // Debug objects
+          if (renderDebugObjects) {
+            for (const object of scene.debugObjects) {
+              renderObject(gl, programInfo, object.object, twgl.v3.add(object.position, center), object.rotation, object.scale);
+            }
+          }
+
+          // Major objects
+          if (params.renderMajorObjects) {
+            for (const object of scene.majorObjects) {
+              renderObject(gl, programInfo, object.object, twgl.v3.add(object.position, center), object.rotation, object.scale);
+            }
+          }
+
+          // Minor objects
+          if (params.renderMinorObjects) {
+            // Generic objects
+            for (const object of scene.minorObjects) {
+              renderObject(gl, programInfo, object.object, twgl.v3.add(object.position, center), object.rotation, object.scale);
+            }
+
+            // Lamps
+            for (const lamp of scene.lamps) {
+              renderLampLookingAt(programInfo, twgl.v3.add(lamp.position, center), twgl.v3.add(lamp.lookAt, center), lamp.type, renderDebugObjects && useLampDebugHead && lamp.lookingAtObject);
+            }
+          }
+
+          break;
+      }
     }
   }
 
@@ -913,27 +1292,27 @@ async function main() {
     return Math.floor(((noiseGenerator(row / noiseScale, col / noiseScale) + 1) / 2) * numBiomes);
   }
 
-  function renderDesk(deskWidth, deskHeight, deskDepth, deskPosition, renderLegs = true, renderTop = true, barThickness = 0.04, topThickness = 0.04) {
+  function renderDesk(programInfo, deskWidth, deskHeight, deskDepth, deskPosition, renderLegs = true, renderTop = true, barThickness = 0.04, topThickness = 0.04) {
     const legOffset = [deskWidth / 2 - barThickness / 2, deskHeight / 2 - topThickness / 2, deskDepth / 2 - barThickness / 2];
 
     if (renderLegs) {
       // Southeast leg
-      renderObject(gl, meshProgramInfo, deskBar, twgl.v3.add([legOffset[0], legOffset[1], legOffset[2]], deskPosition), [0, 0, 0], [barThickness, deskHeight - topThickness, barThickness]);
+      renderObject(gl, programInfo, deskBar, twgl.v3.add([legOffset[0], legOffset[1], legOffset[2]], deskPosition), [0, 0, 0], [barThickness, deskHeight - topThickness, barThickness]);
       // Northwest leg
-      renderObject(gl, meshProgramInfo, deskBar, twgl.v3.add([legOffset[0], legOffset[1], -legOffset[2]], deskPosition), [0, 0, 0], [barThickness, deskHeight - topThickness, barThickness]);
+      renderObject(gl, programInfo, deskBar, twgl.v3.add([legOffset[0], legOffset[1], -legOffset[2]], deskPosition), [0, 0, 0], [barThickness, deskHeight - topThickness, barThickness]);
       // Northeast leg
-      renderObject(gl, meshProgramInfo, deskBar, twgl.v3.add([-legOffset[0], legOffset[1], -legOffset[2]], deskPosition), [0, 0, 0], [barThickness, deskHeight - topThickness, barThickness]);
+      renderObject(gl, programInfo, deskBar, twgl.v3.add([-legOffset[0], legOffset[1], -legOffset[2]], deskPosition), [0, 0, 0], [barThickness, deskHeight - topThickness, barThickness]);
       // Southwest leg
-      renderObject(gl, meshProgramInfo, deskBar, twgl.v3.add([-legOffset[0], legOffset[1], legOffset[2]], deskPosition), [0, 0, 0], [barThickness, deskHeight - topThickness, barThickness]);
+      renderObject(gl, programInfo, deskBar, twgl.v3.add([-legOffset[0], legOffset[1], legOffset[2]], deskPosition), [0, 0, 0], [barThickness, deskHeight - topThickness, barThickness]);
       
       // South bar
-      renderObject(gl, meshProgramInfo, deskBar, twgl.v3.add([0, deskHeight - barThickness / 2 - topThickness, deskDepth / 2 - barThickness / 2], deskPosition), [0, 0, Math.PI / 2], [barThickness, deskWidth - barThickness * 2,barThickness]);
+      renderObject(gl, programInfo, deskBar, twgl.v3.add([0, deskHeight - barThickness / 2 - topThickness, deskDepth / 2 - barThickness / 2], deskPosition), [0, 0, Math.PI / 2], [barThickness, deskWidth - barThickness * 2,barThickness]);
       // North bar
-      renderObject(gl, meshProgramInfo, deskBar, twgl.v3.add([0, deskHeight - barThickness / 2 - topThickness, -deskDepth / 2 + barThickness / 2], deskPosition), [0, 0, Math.PI / 2], [barThickness, deskWidth - barThickness * 2,barThickness]);
+      renderObject(gl, programInfo, deskBar, twgl.v3.add([0, deskHeight - barThickness / 2 - topThickness, -deskDepth / 2 + barThickness / 2], deskPosition), [0, 0, Math.PI / 2], [barThickness, deskWidth - barThickness * 2,barThickness]);
       // East bar
-      renderObject(gl, meshProgramInfo, deskBar, twgl.v3.add([deskWidth / 2 - barThickness / 2, deskHeight - barThickness / 2 - topThickness, 0], deskPosition), [Math.PI / 2, 0, 0], [barThickness, deskDepth - barThickness * 2,barThickness]);
+      renderObject(gl, programInfo, deskBar, twgl.v3.add([deskWidth / 2 - barThickness / 2, deskHeight - barThickness / 2 - topThickness, 0], deskPosition), [Math.PI / 2, 0, 0], [barThickness, deskDepth - barThickness * 2,barThickness]);
       // West bar
-      renderObject(gl, meshProgramInfo, deskBar, twgl.v3.add([-deskWidth / 2 + barThickness / 2, deskHeight - barThickness / 2 - topThickness, 0], deskPosition), [Math.PI / 2, 0, 0], [barThickness, deskDepth - barThickness * 2,barThickness]);
+      renderObject(gl, programInfo, deskBar, twgl.v3.add([-deskWidth / 2 + barThickness / 2, deskHeight - barThickness / 2 - topThickness, 0], deskPosition), [Math.PI / 2, 0, 0], [barThickness, deskDepth - barThickness * 2,barThickness]);
     }
 
     if (renderTop) {
@@ -943,16 +1322,74 @@ async function main() {
       
       for (let i = 0; i < deskWidth / deskTopTileWidth; i++) {
         for (let j = 0; j < deskDepth / deskTopTileDepth; j++) {
-          renderObject(gl, meshProgramInfo, deskTopTile, twgl.v3.add([(i + 0.5) * deskTopTileWidth - deskWidth / 2, deskHeight - topThickness, (j + 0.5) * deskTopTileDepth - deskDepth / 2], deskPosition), [0, 0, 0], [deskTopTileWidth, topThickness, deskTopTileDepth]);
+          renderObject(gl, programInfo, deskTopTile, twgl.v3.add([(i + 0.5) * deskTopTileWidth - deskWidth / 2, deskHeight - topThickness, (j + 0.5) * deskTopTileDepth - deskDepth / 2], deskPosition), [0, 0, 0], [deskTopTileWidth, topThickness, deskTopTileDepth]);
         }
       }
     }
   }
 
+  function drawFrustum(cameraMatrix, gl, colorProgramInfo, lightWorldMatrix, lightProjectionMatrix, projectionMatrix) {
+    const cubeLinesBufferInfo = twgl.createBufferInfoFromArrays(gl, {
+      position: [
+        -1, -1, -1,
+        1, -1, -1,
+        -1, 1, -1,
+        1, 1, -1,
+        -1, -1, 1,
+        1, -1, 1,
+        -1, 1, 1,
+        1, 1, 1,
+      ],
+      indices: [
+        0, 1,
+        1, 3,
+        3, 2,
+        2, 0,
+  
+        4, 5,
+        5, 7,
+        7, 6,
+        6, 4,
+  
+        0, 4,
+        1, 5,
+        3, 7,
+        2, 6,
+      ],
+    });
+
+    const cubeLinesVAO = twgl.createVAOFromBufferInfo(gl, colorProgramInfo, cubeLinesBufferInfo);
+    
+    // ------ Draw the frustum ------
+    const viewMatrix = twgl.m4.inverse(cameraMatrix);
+  
+    gl.useProgram(colorProgramInfo.program);
+  
+    // Setup all the needed attributes.
+    gl.bindVertexArray(cubeLinesVAO);
+  
+    // scale the cube in Z so it's really long
+    // to represent the texture is being projected to
+    // infinity
+    const mat = twgl.m4.multiply(
+      lightWorldMatrix, twgl.m4.inverse(lightProjectionMatrix));
+  
+    // Set the uniforms we just computed
+    twgl.setUniforms(colorProgramInfo, {
+      u_color: [1, 1, 1, 1],
+      u_view: viewMatrix,
+      u_projection: projectionMatrix,
+      u_world: mat,
+    });
+  
+    // calls gl.drawArrays or gl.drawElements
+    twgl.drawBufferInfo(gl, cubeLinesBufferInfo, gl.LINES);
+  }
+
   const defaultLampHeadOffset = [0.053379, 0.375211, 0.000011];
   const antiqueLampHeadOffset = [0.053676, 0.276961, 0];
 
-  function renderLampLookingAt(lampPosition, lookAtPosition, type = "default", debugHead = false) {
+  function renderLampLookingAt(programInfo, lampPosition, lookAtPosition, type = "default", debugHead = false) {
     const lampHeadOffset = type === "antique" ? antiqueLampHeadOffset : defaultLampHeadOffset;
     const xOffset = type === "antique" ? 0 : 0.067045;
     
@@ -968,10 +1405,10 @@ async function main() {
     lampDirection = twgl.v3.subtract(lookAtPosition, lampHeadPosition);
     const lampHeadPitch = Math.atan2(lampDirection[1], Math.sqrt(lampDirection[0] * lampDirection[0] + lampDirection[2] * lampDirection[2]));
 
-    renderLamp(lampPosition, lampYaw, lampHeadPitch, type, debugHead);
+    renderLamp(programInfo, lampPosition, lampYaw, lampHeadPitch, type, debugHead);
   }
 
-  function renderLamp(lampPosition, lampYaw, lampHeadPitch, type = "default", useDebugHead = false) {
+  function renderLamp(programInfo, lampPosition, lampYaw, lampHeadPitch, type = "default", useDebugHead = false) {
     const lampHeadOffset = type === "antique" ? antiqueLampHeadOffset : defaultLampHeadOffset;
     const body = type === "antique" ? antiqueLampBody : lampBody;
     const head = type === "antique" ? antiqueLampHead : lampHead;
@@ -988,8 +1425,8 @@ async function main() {
 
     const rotatedHeadPosition = [lampXYPosition[0], absoluteHeadPosition[1], lampXYPosition[1]];
 
-    renderObject(gl, meshProgramInfo, body, lampPosition, [0, lampYaw, 0]);
-    renderObject(gl, meshProgramInfo, useDebugHead ? debugHead : head, rotatedHeadPosition, [0, lampYaw, lampHeadPitch + Math.PI/2]);
+    renderObject(gl, programInfo, body, lampPosition, [0, lampYaw, 0]);
+    renderObject(gl, programInfo, useDebugHead ? debugHead : head, rotatedHeadPosition, [0, lampYaw, lampHeadPitch + Math.PI/2]);
   }
   
   function rotate2DVector(vector, angle) {

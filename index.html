@@ -17,7 +17,7 @@
         
       </div>
       <canvas id="canvas"></canvas>
-      <div class="panel" style="padding: 0.5rem; overflow-y: scroll; max-height: 100vh; width: 25vw;">
+      <div class="panel">
         <div class="panel-header">
           <h2>Camera controls</h2>
         </div>
@@ -120,6 +120,80 @@
         <div style="margin-bottom: 0.5rem;">
           <label>Decorations biome</label>
           <input type="checkbox" id="decorations-biome" />
+        </div>
+        <div class="panel-header">
+          <h2>Light</h2>
+        </div>
+        <div style="margin-bottom: 0.5rem;">
+          <label>Position X</label>
+          <input type="number" step="0.1" id="light-x" />
+        </div>
+        <div style="margin-bottom: 0.5rem;">
+          <label>Position Y</label>
+          <input type="number" step="0.1" id="light-y" />
+        </div>
+        <div style="margin-bottom: 0.5rem;">
+          <label>Position Z</label>
+          <input type="number" step="0.1" id="light-z" />
+        </div>
+        <div style="margin-bottom: 0.5rem;">
+          <label>Target X</label>
+          <input type="number" step="0.1" id="light-target-x" />
+        </div>
+        <div style="margin-bottom: 0.5rem;">
+          <label>Target Y</label>
+          <input type="number" step="0.1" id="light-target-y" />
+        </div>
+        <div style="margin-bottom: 0.5rem;">
+          <label>Target Z</label>
+          <input type="number" step="0.1" id="light-target-z" />
+        </div>
+        <div style="margin-bottom: 0.5rem;">
+          <label>Shadow type</label>
+          <select id="shadow-type">
+            <option value="hard">Hard</option>
+            <option value="circle-pcf">Circle Percentage Closer Filtering</option>
+            <option value="box-pcf">Box Percentage Closer Filtering</option>
+            <option value="none">None</option>
+          </select>
+        </div>
+        <div style="margin-bottom: 0.5rem;">
+          <label>Blur kernel radius</label>
+          <input type="number" step="0.001" id="shadow-blur-kernel" />
+        </div>
+        <div style="margin-bottom: 0.5rem;">
+          <label>Sampling</label>
+          <input type="number" step="1" id="shadow-sampling" />
+        </div>
+        <div style="margin-bottom: 0.5rem;">
+          <label>Projection width</label>
+          <input type="number" step="0.1" id="light-proj-width" />
+        </div>
+        <div style="margin-bottom: 0.5rem;">
+          <label>Projection height</label>
+          <input type="number" step="0.1" id="light-proj-height" />
+        </div>
+        <div style="margin-bottom: 0.5rem;">
+          <label>Perspective</label>
+          <input type="checkbox" id="light-perspective" />
+        </div>
+        <div style="margin-bottom: 0.5rem;">
+          <label>Field of view</label>
+          <input type="number" step="1" id="light-fov" />
+        </div>
+        <div style="margin-bottom: 0.5rem;">
+          <label>Bias</label>
+          <input type="number" step="0.001" id="shadow-bias" />
+        </div>
+        <div style="margin-bottom: 0.5rem;">
+          <label>Depth texture size</label>
+          <select id="depth-texture-size">
+            <option value="256">256</option>
+            <option value="512">512</option>
+            <option value="1024">1024</option>
+            <option value="2048">2048</option>
+            <option value="4096">4096</option>
+          </select>
         </div>
         <div class="panel-header">
           <h2>Debug options</h2>

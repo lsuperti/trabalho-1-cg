@@ -459,7 +459,7 @@ export async function importOBJ(objHref, gl, meshProgramInfo, callback) {
   return { zNear, zFar, cameraPosition, cameraTarget, objOffset, parts };
 }
 
-export function renderObject(gl, meshProgramInfo, object, [xTranslation, yTranslation, zTranslation] = [0, 0, 0], [xRotation, yRotation, zRotation] = [0, 0, 0], [xScale, yScale, zScale] = [1, 1, 1]) {
+export function renderObject(gl, programInfo, object, [xTranslation, yTranslation, zTranslation] = [0, 0, 0], [xRotation, yRotation, zRotation] = [0, 0, 0], [xScale, yScale, zScale] = [1, 1, 1]) {
   var u_world = twgl.m4.translation(twgl.v3.create(xTranslation, yTranslation, zTranslation));
   u_world = twgl.m4.rotateX(u_world, xRotation);
   u_world = twgl.m4.rotateY(u_world, yRotation);
@@ -471,7 +471,7 @@ export function renderObject(gl, meshProgramInfo, object, [xTranslation, yTransl
     gl.bindVertexArray(vao);
     
     // calls gl.uniform
-    twgl.setUniforms(meshProgramInfo, {
+    twgl.setUniforms(programInfo, {
       u_world,
     }, material);
     // calls gl.drawArrays or gl.drawElements

@@ -3,9 +3,16 @@ body {
 }
 
 canvas {
-  width: 75vw;
+  width: 75%;
   height: 100vh;
   display: block;
+}
+
+.panel {
+  width: 25%;
+  height: 100vh;
+  padding: 0.5rem;
+  overflow-y: scroll;
 }
 
 #loading-bar {
